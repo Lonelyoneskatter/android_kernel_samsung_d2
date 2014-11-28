@@ -191,6 +191,8 @@ bool is_display_on()
 	return display_on;
 }
 
+bool screen_on = true;
+
 static const char section_name[SECTION_NUM][SECTION_NAME_LEN] = {
 	"BOOT", "CORE", "PRIV", "PUBL"
 };
@@ -3136,6 +3138,7 @@ static int mms_ts_suspend(struct device *dev)
            (power_suspended);
         };
 
+	screen_on = false;
 out:
 	mutex_unlock(&info->input_dev->mutex);
 
@@ -3184,6 +3187,8 @@ static int mms_ts_resume(struct device *dev)
         } else if (display_on) {
            (!power_suspended);
         };
+
+	screen_on = true;
 
 	return ret;
 }
