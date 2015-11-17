@@ -37,6 +37,8 @@
 
 static int active_count;
 
+extern bool screen_on;
+
 struct cpufreq_skatteractive_cpuinfo {
 	struct timer_list cpu_timer;
 	struct timer_list cpu_slack_timer;
@@ -113,6 +115,9 @@ static int nabove_hispeed_delay = ARRAY_SIZE(default_above_hispeed_delay);
 static int timer_slack_val = DEFAULT_TIMER_SLACK;
 
 static bool io_is_busy;
+
+#define DEFAULT_SCREEN_OFF_MAX 648000
+static unsigned long screen_off_max = DEFAULT_SCREEN_OFF_MAX;
 
 /*
  * Stay at max freq for at least max_freq_hysteresis before dropping frequency.
@@ -548,6 +553,9 @@ static int cpufreq_skatteractive_speedchange_task(void *data)
 				}
 			}
 
+			if (unlikely(!screen_on))
+				if (max_freq > screen_off_max) max_freq = screen_off_max;
+
 			if (max_freq != pcpu->policy->cur) {
 				__cpufreq_driver_target(pcpu->policy,
 							max_freq,
@@ -871,6 +879,28 @@ static ssize_t store_timer_slack(
 
 define_one_global_rw(timer_slack);
 
+static ssize_t show_screen_off_maxfreq(struct kobject *kobj, struct attribute *attr,
+			  char *buf)
+{
+	return sprintf(buf, "%lu\n", screen_off_max);
+}
+
+static ssize_t store_screen_off_maxfreq(struct kobject *kobj, struct attribute *attr,
+			   const char *buf, size_t count)
+{
+	int ret;
+	unsigned long val;
+
+	ret = strict_strtoul(buf, 0, &val);
+	if (ret < 0) return ret;
+	if (val < 384000) screen_off_max = DEFAULT_SCREEN_OFF_MAX;
+	else screen_off_max = val;
+	return count;
+}
+
+static struct global_attr screen_off_maxfreq_attr = __ATTR(screen_off_maxfreq, 0644,
+		show_screen_off_maxfreq, store_screen_off_maxfreq);
+
 static ssize_t show_io_is_busy(struct kobject *kobj,
 			struct attribute *attr, char *buf)
 {
@@ -924,6 +954,7 @@ static struct attribute *skatteractive_attributes[] = {
 	&min_sample_time_attr.attr,
 	&timer_rate_attr.attr,
 	&timer_slack.attr,
+	&screen_off_maxfreq_attr.attr,
 	&io_is_busy_attr.attr,
 	&max_freq_hysteresis_attr.attr,
 	NULL,
@@ -1106,6 +1137,8 @@ static int __init cpufreq_skatteractive_init(void)
 	unsigned int i;
 	struct cpufreq_skatteractive_cpuinfo *pcpu;
 	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+
+	screen_on = true;
 
 	/* Initalize per-cpu timers */
 	for_each_possible_cpu(i) {
