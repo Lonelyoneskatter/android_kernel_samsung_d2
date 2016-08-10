@@ -20,6 +20,9 @@
 #include <linux/workqueue.h>
 #include <linux/cpumask.h>
 #include <asm/div64.h>
+#include <asm/cputime.h>
+#include <linux/err.h>
+#include <linux/clk.h>
 
 #define CPUFREQ_NAME_LEN 16
 
@@ -102,6 +105,7 @@ struct cpufreq_policy {
 	unsigned int		cur;    /* in kHz, only needed if cpufreq
 					 * governors are used */
 	unsigned int            util;  /* CPU utilization at max frequency */
+	unsigned int		load_at_max;  /* CPU utilization at max frequency */
 	unsigned int		policy; /* see above */
 	struct cpufreq_governor	*governor; /* see below */
 
@@ -131,6 +135,9 @@ struct cpufreq_policy {
 #define CPUFREQ_RESUMECHANGE	(8)
 #define CPUFREQ_SUSPENDCHANGE	(9)
 
+int cpufreq_get_global_kobject(void);
+void cpufreq_put_global_kobject(void);
+
 struct cpufreq_freqs {
 	unsigned int cpu;	/* cpu nr */
 	unsigned int old;
@@ -148,6 +155,34 @@ struct cpufreq_freqs {
  *
  *    new = old * mult / div
  */
+
+#ifdef CONFIG_CPU_FREQ
+unsigned int cpufreq_get(unsigned int cpu);
+unsigned int cpufreq_quick_get(unsigned int cpu);
+unsigned int cpufreq_quick_get_max(unsigned int cpu);
+void disable_cpufreq(void);
+
+u64 get_cpu_idle_time(unsigned int cpu, u64 *wall, int io_busy);
+int cpufreq_get_policy(struct cpufreq_policy *policy, unsigned int cpu);
+int cpufreq_update_policy(unsigned int cpu);
+bool have_governor_per_policy(void);
+struct kobject *get_governor_parent_kobj(struct cpufreq_policy *policy);
+#else
+static inline unsigned int cpufreq_get(unsigned int cpu)
+{
+	return 0;
+}
+static inline unsigned int cpufreq_quick_get(unsigned int cpu)
+{
+	return 0;
+}
+static inline unsigned int cpufreq_quick_get_max(unsigned int cpu)
+{
+	return 0;
+}
+static inline void disable_cpufreq(void) { }
+#endif
+
 static inline unsigned long cpufreq_scale(unsigned long old, u_int div, u_int mult)
 {
 #if BITS_PER_LONG == 32
@@ -172,6 +207,9 @@ static inline unsigned long cpufreq_scale(unsigned long old, u_int div, u_int mu
 #define CPUFREQ_GOV_START  1
 #define CPUFREQ_GOV_STOP   2
 #define CPUFREQ_GOV_LIMITS 3
+#define CPUFREQ_RELATION_L 0  /* lowest frequency at or above target */
+#define CPUFREQ_RELATION_H 1  /* highest frequency below or at target */
+#define CPUFREQ_RELATION_C 2  /* closest frequency to target */
 
 struct cpufreq_governor {
 	char	name[CPUFREQ_NAME_LEN];
@@ -255,7 +293,13 @@ struct cpufreq_driver {
 					 * frequency transitions */
 #define CPUFREQ_PM_NO_WARN	0x04	/* don't warn on suspend/resume speed
 					 * mismatches */
-
+/*
+ * This should be set by platforms having multiple clock-domains, i.e.
+ * supporting multiple policies. With this sysfs directories of governor would
+ * be created in cpu/cpu<num>/cpufreq/ directory and so they can use the same
+ * governor with different tunables for different clusters.
+ */
+#define CPUFREQ_HAVE_GOVERNOR_PER_POLICY (1 << 3)
 int cpufreq_register_driver(struct cpufreq_driver *driver_data);
 int cpufreq_unregister_driver(struct cpufreq_driver *driver_data);
 
@@ -406,8 +450,10 @@ extern struct cpufreq_governor cpufreq_gov_nightmare;
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_YANKACTIVE)
 extern struct cpufreq_governor cpufreq_gov_yankactive;
 #define CPUFREQ_DEFAULT_GOVERNOR 	(&cpufreq_gov_yankactive)
+#elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_UMBRELLA_CORE)
+extern struct cpufreq_governor cpufreq_gov_umbrella_core;
+#define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_umbrella_core)
 #endif
-
 
 /*********************************************************************
  *                     FREQUENCY TABLE HELPERS                       *
@@ -449,3 +495,76 @@ void cpufreq_frequency_table_put_attr(unsigned int cpu);
 
 
 #endif /* _LINUX_CPUFREQ_H */
+
+/**
+ * clk_get_sys - get a clock based upon the device name
+ * @dev_id: device name
+ * @con_id: connection ID
+ *
+ * Returns a struct clk corresponding to the clock producer, or
+ * valid IS_ERR() condition containing errno.  The implementation
+ * uses @dev_id and @con_id to determine the clock consumer, and
+ * thereby the clock producer. In contrast to clk_get() this function
+ * takes the device name instead of the device itself for identification.
+ *
+ * Drivers must assume that the clock source is not enabled.
+ *
+ * clk_get_sys should not be called from within interrupt context.
+ */
+struct clk *clk_get_sys(const char *dev_id, const char *con_id);
+/*static atomic_t bimc_lock_count = ATOMIC_INIT(0);*/
+
+/**
+ * clk_set_rate - set the clock rate for a clock source
+ * @clk: clock source
+ * @rate: desired clock rate in Hz
+ *
+ * Returns success (0) or negative errno.
+ */
+int clk_set_rate(struct clk *clk, unsigned long rate);
+
+/**
+ * clk_disable - inform the system when the clock source is no longer required.
+ * @clk: clock source
+ *
+ * Inform the system that a clock source is no longer required by
+ * a driver and may be shut down.
+ *
+ * May be called from atomic contexts.
+ *
+ * Implementation detail: if the clock source is shared between
+ * multiple drivers, clk_enable() calls must be balanced by the
+ * same number of clk_disable() calls for the clock source to be
+ * disabled.
+ */
+void clk_disable(struct clk *clk);
+
+/**
+ * clk_unprepare - undo preparation of a clock source
+ * @clk: clock source
+ *
+ * This undoes a previously prepared clock.  The caller must balance
+ * the number of prepare and unprepare calls.
+ *
+ * Must not be called from within atomic context.
+ */
+#ifdef CONFIG_HAVE_CLK_PREPARE
+void clk_unprepare(struct clk *clk);
+#else
+static inline void clk_unprepare(struct clk *clk)
+{
+	might_sleep();
+}
+#endif
+
+/**
+ * clk_enable - inform the system when the clock source should be running.
+ * @clk: clock source
+ *
+ * If the clock can not be enabled/disabled, this should return success.
+ *
+ * May be called from atomic contexts.
+ *
+ * Returns success (0) or negative errno.
+ */
+int clk_enable(struct clk *clk);
