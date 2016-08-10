@@ -3872,8 +3872,10 @@ static void adreno_power_stats(struct kgsl_device *device,
 	 * If we're not currently active, there shouldn't have been
 	 * any cycles since the last time this function was called.
 	 */
-	if (device->state == KGSL_STATE_ACTIVE)
-		cycles = adreno_dev->gpudev->busy_cycles(adreno_dev);
+	if (device->state != KGSL_STATE_ACTIVE)
+		return;
+
+	cycles = adreno_dev->gpudev->busy_cycles(adreno_dev);
 
 	/*
 	 * In order to calculate idle you have to have run the algorithm
