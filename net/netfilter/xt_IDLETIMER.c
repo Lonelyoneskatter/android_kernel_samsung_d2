@@ -216,7 +216,7 @@ static void idletimer_tg_work(struct work_struct *work)
 
 	sysfs_notify(idletimer_tg_kobj, NULL, timer->attr.attr.name);
 
-	if (timer->send_nl_msg)
+	if (timer && timer->send_nl_msg)
 		notify_netlink_uevent(timer->attr.attr.name, timer);
 }
 
