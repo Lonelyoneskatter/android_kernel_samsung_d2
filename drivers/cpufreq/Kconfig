@@ -200,6 +200,13 @@ config CPU_FREQ_DEFAULT_GOV_UMBRELLA_CORE
 	  loading your cpufreq low-level hardware driver, using the
 	  'umbrella_core' governor for latency-sensitive workloads.
 
+config CPU_FREQ_DEFAULT_GOV_ELEMENTALX
+	bool "elementalx"
+	select CPU_FREQ_GOV_ELEMENTALX
+	select CPU_FREQ_GOV_PERFORMANCE
+	help
+	  Use the CPUFreq governor 'elementalx' as default.
+
 endchoice
 
 config CPU_FREQ_GOV_PERFORMANCE
@@ -376,6 +383,10 @@ config CPU_FREQ_GOV_UMBRELLA_CORE
 	  designed for latency-sensitive workloads.
 	  The governor is based on interactive to provide a resident controller
 	  which interprets unnecessary battery drain as evil
+
+config CPU_FREQ_GOV_ELEMENTALX
+	tristate "'elementalx' cpufreq policy governor"
+	select CPU_FREQ_TABLE
 
 menu "x86 CPU frequency scaling drivers"
 depends on X86

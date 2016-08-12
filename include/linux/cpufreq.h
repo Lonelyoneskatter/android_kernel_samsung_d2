@@ -453,6 +453,9 @@ extern struct cpufreq_governor cpufreq_gov_yankactive;
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_UMBRELLA_CORE)
 extern struct cpufreq_governor cpufreq_gov_umbrella_core;
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_umbrella_core)
+#elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_ELEMENTALX)
+extern struct cpufreq_governor cpufreq_gov_elementalx;
+#define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_elementalx)
 #endif
 
 /*********************************************************************
