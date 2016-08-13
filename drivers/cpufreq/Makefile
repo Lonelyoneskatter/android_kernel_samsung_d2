@@ -28,6 +28,7 @@ obj-$(CONFIG_CPU_FREQ_GOV_UMBRELLA_CORE)	+= cpufreq_umbrella_core.o
 obj-$(CONFIG_CPU_FREQ_GOV_ELEMENTALX)	+= cpufreq_elementalx.o
 obj-$(CONFIG_CPU_FREQ_GOV_OPTIMAX)	+= cpufreq_optimax.o
 obj-$(CONFIG_CPU_FREQ_GOV_HELLSACTIVE)	+= cpufreq_hellsactive.o
+obj-$(CONFIG_CPU_FREQ_GOV_TIERSERVATIVE)	+= cpufreq_tierservative.o
 
 # CPUfreq cross-arch helpers
 obj-$(CONFIG_CPU_FREQ_TABLE)		+= freq_table.o
