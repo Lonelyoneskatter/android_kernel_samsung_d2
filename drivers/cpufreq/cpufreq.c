@@ -806,10 +806,6 @@ static struct kobj_type ktype_cpufreq = {
 
 int cpufreq_get_global_kobject(void)
 {
-	if (!cpufreq_global_kobject_usage++)
-		return kobject_add(cpufreq_global_kobject,
-				&cpu_subsys.dev_root->kobj, "%s", "cpufreq");
-
 	return 0;
 }
 EXPORT_SYMBOL(cpufreq_get_global_kobject);
