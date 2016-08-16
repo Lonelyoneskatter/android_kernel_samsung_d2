@@ -266,7 +266,7 @@ static struct attribute *dbs_attributes[] = {
 
 static struct attribute_group dbs_attr_group = {
 	.attrs = dbs_attributes,
-	.name = "LionHeart",
+	.name = "lionheart",
 };
 
 static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
@@ -493,7 +493,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 static
 #endif
 struct cpufreq_governor cpufreq_gov_lionheart = {
-	.name			= "LionHeart",
+	.name			= "lionheart",
 	.governor		= cpufreq_governor_dbs,
 	.max_transition_latency	= TRANSITION_LATENCY_LIMIT,
 	.owner			= THIS_MODULE,
