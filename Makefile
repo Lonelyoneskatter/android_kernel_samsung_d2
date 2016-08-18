@@ -611,13 +611,16 @@ KBUILD_CFLAGS	+= --param max-gcse-memory=0 \
 		   --param max-gcse-insertion-ratio=50 \
 		   --param max-tail-merge-comparisons=100 \
 		   --param max-tail-merge-iterations=4 \
-		   --param l2-cache-size=1024
-LDFLAGS         += -Ofast --sort-common --hash-style=gnu
+		   --param l2-cache-size=1024 \
+                   --param l1-cache-size=16 \
+                   --param l1-cache-line-size=16
 
-LDFLAGS        += -flto
+LDFLAGS         += -Ofast --sort-common --hash-style=gnu
+LDFLAGS         += -flto
 KBUILD_CFLAGS   += $(call cc-disable-warning,maybe-uninitialized)
 KBUILD_CFLAGS   += $(call cc-disable-warning,array-bounds)
-
+KBUILD_CFLAGS	+= -fsanitize=leak -fno-diagnostics-show-caret -fno-pic \
+                   -DNDEBUG
 # New in GCC5
 ifeq ($(call cc-ifversion, -ge, 0501,y),y)
 KBUILD_CFLAGS	+= -flra-remat -fipa-ra -fipa-pta
