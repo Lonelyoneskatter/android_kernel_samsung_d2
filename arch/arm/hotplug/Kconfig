@@ -1,0 +1,15 @@
+config MSM_HOTPLUG
+	bool "MSM hotplug driver"
+	depends on HOTPLUG_CPU
+	default y
+	help
+	  The MSM hotplug driver controls on-/offlining of additional cores based
+	  on current cpu load.
+
+config MSM_SLEEPER
+	bool "CPU hotplug driver"
+ 	default y
+ 	help
+	  CPU hotplug driver controls on-/offlining of additional cores based
+	  on suspend/resume.
+
