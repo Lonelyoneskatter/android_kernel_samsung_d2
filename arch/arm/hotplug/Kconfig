@@ -42,3 +42,8 @@ config ZEN_DECISION
 
 	  Enable this if you'd like the ability to disable MPDecision.
 
+config THUNDER_PLUG
+      bool "Enable plugging down/up of cores using powersuspend"
+      help
+       This driver uses powersuspend to take down the cpu cores
+       on a octa core device. Tuned to work on a dual core device.
