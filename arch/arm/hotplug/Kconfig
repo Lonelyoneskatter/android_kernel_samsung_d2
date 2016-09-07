@@ -47,3 +47,11 @@ config THUNDER_PLUG
       help
        This driver uses powersuspend to take down the cpu cores
        on a octa core device. Tuned to work on a dual core device.
+
+config BRICKED_HOTPLUG
+	bool "Enable kernel based mpdecision"
+	depends on MSM_RUN_QUEUE_STATS
+	default y
+	help
+	  This enables kernel based multi core control.
+	  (up/down hotplug based on load)
