@@ -110,17 +110,18 @@ static spinlock_t speedchange_cpumask_lock;
 static struct mutex gov_lock;
 
 /* Hi speed to bump to from lo speed when load burst (default max) */
-static unsigned int hispeed_freq;
+#define DEFAULT_HISPEED_FREQ 486000
+static unsigned int hispeed_freq = DEFAULT_HISPEED_FREQ;
 
 /* Go to hi speed when CPU load at or above this value. */
-#define DEFAULT_GO_HISPEED_LOAD 90
+#define DEFAULT_GO_HISPEED_LOAD 88
 static unsigned long go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
 
 /* Sampling down factor to be applied to min_sample_time at max freq */
 static unsigned int sampling_down_factor;
 
 /* Target load.  Lower values result in higher CPU speeds. */
-#define DEFAULT_TARGET_LOAD 80
+#define DEFAULT_TARGET_LOAD 90
 static unsigned int default_target_loads[] = {DEFAULT_TARGET_LOAD};
 static spinlock_t target_loads_lock;
 static unsigned int *target_loads = default_target_loads;
@@ -166,8 +167,8 @@ static u64 boostpulse_endtime;
 #define DEFAULT_TIMER_SLACK (4 * DEFAULT_TIMER_RATE)
 static int timer_slack_val = DEFAULT_TIMER_SLACK;
 
-#define DEFAULT_INACTIVE_FREQ_ON    2035200
-#define DEFAULT_INACTIVE_FREQ_OFF   576000
+#define DEFAULT_INACTIVE_FREQ_ON    1512000
+#define DEFAULT_INACTIVE_FREQ_OFF   702000
 unsigned int max_inactive_freq = DEFAULT_INACTIVE_FREQ_ON;
 unsigned int max_inactive_freq_screen_on = DEFAULT_INACTIVE_FREQ_ON;
 unsigned int max_inactive_freq_screen_off = DEFAULT_INACTIVE_FREQ_OFF;
@@ -189,8 +190,8 @@ static spinlock_t mode_lock;
 #define SINGLE_MODE	1
 #define NO_MODE	0
 
-static unsigned int mode = 0;
-static unsigned int enforced_mode = 0;
+static unsigned int mode = MULTI_MODE;
+static unsigned int enforced_mode = MULTI_MODE;
 static u64 mode_check_timestamp = 0;
 
 #define DEFAULT_MULTI_ENTER_TIME (4 * DEFAULT_TIMER_RATE)
@@ -233,7 +234,8 @@ static unsigned int sampling_down_factor_set[MAX_PARAM_SET];
 // BW for 8084 : 762 1144 1525 2288 3051 3952 4684 5859 7019 8056 10101 12145 16250
 // Freq for 8974 (KHz) : 19200   37500   50000   75000  100000  150000  200000  307200  460800  614400  825600
 // Freq for 8084 (KHz) : 19200   37500   50000   75000  100000  150000  200000  307200  384000  460800  556800  691200  825600  931200
-static unsigned long bimc_hispeed_freq = 0;	// bimc hispeed freq on mode change. default : MHz
+#define DEFAULT_BIMC_HISPEED_FREQ 1188000
+static unsigned long bimc_hispeed_freq = DEFAULT_BIMC_HISPEED_FREQ;	// bimc hispeed freq on mode change. default : MHz
 static int mode_count = 0;
 /*extern int request_bimc_clk(unsigned long request_clk);*/
 extern void msm_pm_retention_mode_enable(bool enable);
@@ -248,9 +250,12 @@ static struct work_struct mode_auto_change_boost_work;
  * up_threshold_any_cpu_freq then do not let the frequency to drop below
  * sync_freq
  */
-static unsigned int up_threshold_any_cpu_load;
-static unsigned int sync_freq;
-static unsigned int up_threshold_any_cpu_freq;
+#define DEFAULT_SYNC_FREQ 756000
+#define DEFAULT_UP_THRESHOLD_ANY_CPU_LOAD 50
+#define DEFAULT_UP_THRESHOLD_ANY_CPU_FREQ 1242000
+static unsigned int up_threshold_any_cpu_load = DEFAULT_UP_THRESHOLD_ANY_CPU_LOAD;
+static unsigned int sync_freq = DEFAULT_SYNC_FREQ;
+static unsigned int up_threshold_any_cpu_freq = DEFAULT_UP_THRESHOLD_ANY_CPU_FREQ;
 
 static int cpufreq_governor_umbrella_core(struct cpufreq_policy *policy,
 		unsigned int event);
@@ -1851,11 +1856,11 @@ static int cpufreq_governor_umbrella_core(struct cpufreq_policy *policy,
 		freq_table =
 			cpufreq_frequency_get_table(policy->cpu);
 		if (!hispeed_freq)
-			hispeed_freq = policy->max;
+			hispeed_freq = DEFAULT_HISPEED_FREQ;
 #ifdef CONFIG_UC_MODE_AUTO_CHANGE
 		for (j=0 ; j<MAX_PARAM_SET ; j++)
 			if (!hispeed_freq_set[j])
-				hispeed_freq_set[j] = policy->max;
+				hispeed_freq_set[j] = DEFAULT_HISPEED_FREQ;
 #endif
 		for_each_cpu(j, policy->cpus) {
 			pcpu = &per_cpu(cpuinfo, j);
