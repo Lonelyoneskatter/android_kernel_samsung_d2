@@ -74,7 +74,7 @@ static spinlock_t speedchange_cpumask_lock;
 static struct mutex gov_lock;
 
 /* Hi speed to bump to from lo speed when load burst (default max) */
-#define DEFAULT_HISPEED_FREQ 1728000
+#define DEFAULT_HISPEED_FREQ 1188000
 static unsigned int hispeed_freq = DEFAULT_HISPEED_FREQ;
 
 /* Go to hi speed when CPU load at or above this value. */
@@ -137,7 +137,8 @@ static int timer_slack_val = DEFAULT_TIMER_SLACK;
 static bool align_windows = true;
 
 /* Improves frequency selection for more energy */
-static bool powersave_bias;
+#define ENABLE_POWERSAVE_BIAS 1
+static bool powersave_bias = ENABLE_POWERSAVE_BIAS;
 
 /*
  * Stay at max freq for at least max_freq_hysteresis before dropping
@@ -146,7 +147,7 @@ static bool powersave_bias;
 #define DEFAULT_MAX_FREQ_HYSTERESIS 100000
 static unsigned int max_freq_hysteresis = DEFAULT_MAX_FREQ_HYSTERESIS;
 
-static bool io_is_busy = 1;
+static bool io_is_busy = 0;
 
 /* Round to starting jiffy of next evaluation window */
 static u64 round_to_nw_start(u64 jif)
