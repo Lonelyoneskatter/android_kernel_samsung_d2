@@ -46,7 +46,7 @@
 #define DEF_HIGH_GRID_STEP             		(20)
 #define DEF_MIDDLE_GRID_LOAD			(65)
 #define DEF_HIGH_GRID_LOAD			(89)
-#define DEF_OPTIMAL_FREQ			(1958400)
+#define DEF_OPTIMAL_FREQ			(1512000)
 
 /*
  * The polling frequency of this governor depends on the capability of
