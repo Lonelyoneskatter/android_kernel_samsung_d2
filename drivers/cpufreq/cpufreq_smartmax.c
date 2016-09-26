@@ -48,17 +48,17 @@
  */
 
 #define DEFAULT_SUSPEND_IDEAL_FREQ 384000
-#define DEFAULT_AWAKE_IDEAL_FREQ 1080000
-#define DEFAULT_RAMP_UP_STEP 810000
-#define DEFAULT_RAMP_DOWN_STEP 486000
-#define DEFAULT_MAX_CPU_LOAD 80
-#define DEFAULT_MIN_CPU_LOAD 45
+#define DEFAULT_AWAKE_IDEAL_FREQ 594000
+#define DEFAULT_RAMP_UP_STEP 200000
+#define DEFAULT_RAMP_DOWN_STEP 200000
+#define DEFAULT_MAX_CPU_LOAD 70
+#define DEFAULT_MIN_CPU_LOAD 40
 #define DEFAULT_UP_RATE 30000
 #define DEFAULT_DOWN_RATE 60000
 #define DEFAULT_SAMPLING_RATE 30000
-#define DEFAULT_INPUT_BOOST_DURATION 1200000
-#define DEFAULT_TOUCH_POKE_FREQ 1512000
-#define DEFAULT_BOOST_FREQ 1512000
+#define DEFAULT_INPUT_BOOST_DURATION 90000
+#define DEFAULT_TOUCH_POKE_FREQ 1134000
+#define DEFAULT_BOOST_FREQ 1134000
 #define DEFAULT_IO_IS_BUSY 0
 #define DEFAULT_IGNORE_NICE 1
 
@@ -122,7 +122,7 @@ static unsigned int boost_freq;
 static bool boost = true;
 
 /* in usecs */
-static unsigned int boost_duration = 0;
+static unsigned int boost_duration;
 
 /* Consider IO as busy */
 static unsigned int io_is_busy;
