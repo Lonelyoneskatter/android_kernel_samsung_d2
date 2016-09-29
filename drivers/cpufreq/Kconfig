@@ -80,11 +80,6 @@ config CPU_FREQ_DEFAULT_GOV_ASSWAX
          bool "asswax"
          select CPU_FREQ_GOV_ASSWAX
 
-config CPU_FREQ_DEFAULT_GOV_BARRY_ALLEN
-	bool "barry_allen"
-	select CPU_FREQ_GOV_BARRY_ALLEN
-	help
-
 config CPU_FREQ_DEFAULT_GOV_BIOSHOCK
 	bool "bioshock"
 	select CPU_FREQ_GOV_BIOSHOCK
@@ -288,10 +283,6 @@ config CPU_FREQ_GOV_ALUCARD
 config CPU_FREQ_GOV_ASSWAX
         tristate "'asswax' cpufreq governor"
         depends on CPU_FREQ
-
-config CPU_FREQ_GOV_BARRY_ALLEN
-	tristate "'barry_allen' cpufreq policy governor"
-	help
 
 config CPU_FREQ_GOV_BIOSHOCK
 	tristate "'bioshock' cpufreq bioshock"
