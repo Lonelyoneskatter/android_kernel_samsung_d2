@@ -150,7 +150,7 @@ static void load_timer(struct work_struct *work)
 		up_timer++;
 
 	for_each_online_cpu(cpu)
-		avg_load++;
+		avg_load += cpufreq_quick_get_util(cpu);
 		
 	avg_load /= online_cpus;
 
