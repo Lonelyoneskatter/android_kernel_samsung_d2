@@ -159,7 +159,7 @@ static struct zone_reclaim_stat *get_reclaim_stat(struct mem_cgroup_zone *mz)
 	return &mz->zone->reclaim_stat;
 }
 
-unsigned long zone_reclaimable_pages(struct zone *zone)
+static unsigned long zone_reclaimable_pages(struct zone *zone)
 {
 	int nr;
 
