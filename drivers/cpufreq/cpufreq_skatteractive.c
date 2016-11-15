@@ -95,6 +95,10 @@ static unsigned long min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
  */
 #define DEFAULT_TIMER_RATE 50000
 static unsigned long timer_rate = DEFAULT_TIMER_RATE;
+/*
+ * The sample rate of the timer used during suspend
+ */
+unsigned long timer_rate_prev = DEFAULT_TIMER_RATE;
 
 /*
  * Wait this long before raising speed above hispeed, by default a single
@@ -139,7 +143,6 @@ static void cpufreq_skatteractive_timer_resched(unsigned long cpu,
 	struct cpufreq_skatteractive_cpuinfo *pcpu = &per_cpu(cpuinfo, cpu);
 	u64 expires;
 	unsigned long flags;
-	u64 now = ktime_to_us(ktime_get());
 
 	spin_lock_irqsave(&pcpu->load_lock, flags);
 	expires = round_to_nw_start(pcpu->last_evaluated_jiffy);
@@ -154,7 +157,7 @@ static void cpufreq_skatteractive_timer_resched(unsigned long cpu,
 		add_timer_on(&pcpu->cpu_timer, cpu);
 	}
 
-	if (timer_slack_val >= 0 &&
+	if ((unlikely(screen_on)) && timer_slack_val >= 0 &&
 	    (pcpu->target_freq > pcpu->policy->min ||
 		(pcpu->target_freq == pcpu->policy->min))) {
 		expires += usecs_to_jiffies(timer_slack_val);
@@ -175,12 +178,11 @@ static void cpufreq_skatteractive_timer_start(int cpu)
 	struct cpufreq_skatteractive_cpuinfo *pcpu = &per_cpu(cpuinfo, cpu);
 	u64 expires = round_to_nw_start(pcpu->last_evaluated_jiffy);
 	unsigned long flags;
-	u64 now = ktime_to_us(ktime_get());
 
 	spin_lock_irqsave(&pcpu->load_lock, flags);
 	pcpu->cpu_timer.expires = expires;
 	add_timer_on(&pcpu->cpu_timer, cpu);
-	if (timer_slack_val >= 0 &&
+	if ((unlikely(screen_on)) && timer_slack_val >= 0 &&
 	    (pcpu->target_freq > pcpu->policy->min ||
 		(pcpu->target_freq == pcpu->policy->min))) {
 		expires += usecs_to_jiffies(timer_slack_val);
@@ -371,6 +373,19 @@ static void cpufreq_skatteractive_timer(unsigned long data)
 	cputime_speedadj = pcpu->cputime_speedadj;
 	pcpu->last_evaluated_jiffy = get_jiffies_64();
 	spin_unlock_irqrestore(&pcpu->load_lock, flags);
+
+	/* Increase timer rate if suspended */
+	if ((unlikely(screen_on)) && timer_rate != timer_rate_prev)
+		timer_rate = timer_rate_prev;
+	else if ((unlikely(!screen_on)) && timer_rate == timer_rate_prev) {
+		timer_rate_prev = timer_rate;
+		timer_rate = timer_rate * 2;
+	}
+
+	/* Make sure timer_rate is timer_rate_prev on wakeup */
+	if ((unlikely(screen_on)) && timer_rate != timer_rate_prev) {
+		timer_rate = timer_rate_prev;
+	}
 
 	if (WARN_ON_ONCE(!delta_time))
 		goto rearm;
@@ -850,6 +865,7 @@ static ssize_t store_timer_rate(struct kobject *kobj,
 				val_round);
 
 	timer_rate = val_round;
+	timer_rate_prev = val_round;
 	return count;
 }
 
@@ -1088,7 +1104,7 @@ static int cpufreq_governor_skatteractive(struct cpufreq_policy *policy,
 			spin_lock_irqsave(&pcpu->target_freq_lock, flags);
 			if (policy->max < pcpu->target_freq) {
 				pcpu->target_freq = policy->max;
-			} else if (policy->min >= pcpu->target_freq) {
+			} else if (policy->min > pcpu->target_freq) {
 				pcpu->target_freq = policy->min;
 				anyboost = 1;
 			}
