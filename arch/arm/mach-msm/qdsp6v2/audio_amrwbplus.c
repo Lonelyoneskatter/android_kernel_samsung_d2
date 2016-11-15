@@ -59,8 +59,8 @@ static long audio_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			audio->pcm_cfg.channel_count);
 			if (rc < 0) {
 				pr_err("pcm output block config failed\n");
-				break;
-			}
+		break;
+	}
 		}
 		amrwbplus_drv_config =
 		(struct msm_audio_amrwbplus_config_v2 *)audio->codec_cfg;
