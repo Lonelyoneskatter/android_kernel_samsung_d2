@@ -620,7 +620,7 @@ LDFLAGS         += -flto
 KBUILD_CFLAGS   += $(call cc-disable-warning,maybe-uninitialized)
 KBUILD_CFLAGS   += $(call cc-disable-warning,array-bounds)
 KBUILD_CFLAGS	+= -fsanitize=leak -fno-diagnostics-show-caret -fno-pic \
-                   -DNDEBUG -g0 -fivopts
+                   -DNDEBUG -g0 -fivopts -fstdarg-opt
 
 # New in GCC5
 ifeq ($(call cc-ifversion, -ge, 0501,y),y)
