@@ -49,6 +49,10 @@
 #include <asm/unaligned.h>
 #include "mms_ts_fw.h"
 
+#ifdef CONFIG_STATE_NOTIFIER
+#include <linux/state_notifier.h>
+#endif
+
 #define MAX_FINGERS		10
 #define MAX_WIDTH		30
 #define MAX_PRESSURE		4095
@@ -3101,6 +3105,9 @@ static int mms_ts_suspend(struct device *dev)
 
 out:
 	mutex_unlock(&info->input_dev->mutex);
+#ifdef CONFIG_STATE_NOTIFIER
+	state_suspend();
+#endif
 	return 0;
 }
 
@@ -3129,6 +3136,9 @@ static int mms_ts_resume(struct device *dev)
 		ret = mms_ts_enable(info, 0);
 	mutex_unlock(&info->input_dev->mutex);
 
+#ifdef CONFIG_STATE_NOTIFIER
+	state_resume();
+#endif
 	return ret;
 }
 #endif
