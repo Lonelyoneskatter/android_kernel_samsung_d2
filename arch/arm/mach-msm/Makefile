@@ -1,5 +1,10 @@
 CFLAGS_scm.o :=$(call as-instr,.arch_extension sec,-DREQUIRES_SEC=1)
 
+# Remove optimizations
+CFLAGS_msm_dcvs_scm.o := -fno-strict-aliasing -fno-graphite -Os -fno-aggressive-loop-optimizations
+CFLAGS_msm_dcvs.o := -fno-strict-aliasing -fno-graphite -Os -fno-aggressive-loop-optimizations
+CFLAGS_msm_mpdecision.o := -fno-strict-aliasing -fno-graphite -Os -fno-aggressive-loop-optimizations
+
 obj-y += io.o dma.o memory.o
 ifndef CONFIG_ARM_ARCH_TIMER
 obj-y += timer.o
