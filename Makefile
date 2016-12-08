@@ -249,10 +249,10 @@ HOSTCXX      = $(CCACHE) g++
 HOSTCFLAGS   = -Wmissing-prototypes -Wstrict-prototypes -Ofast -fomit-frame-pointer -fgcse-las \
                -fgraphite -floop-flatten -floop-parallelize-all -ftree-loop-linear -floop-interchange \
                -floop-strip-mine -floop-block -pipe -Wno-unused-parameter -Wno-sign-compare -Wno-missing-field-initializers \
-               -Wno-unused-variable -Wno-unused-value -std=gnu89 -fno-aggressive-loop-optimizations
+               -Wno-unused-variable -Wno-unused-value -std=gnu89 -fno-aggressive-loop-optimizations -w
  
 HOSTCXXFLAGS = -Ofast -fgcse-las -fgraphite -floop-flatten -floop-parallelize-all -ftree-loop-linear \
-               -floop-interchange -floop-strip-mine -floop-block -pipe
+               -floop-interchange -floop-strip-mine -floop-block -pipe -w
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -600,6 +600,7 @@ KBUILD_CFLAGS	+= -mcpu=cortex-a15 -mtune=cortex-a15 -mfloat-abi=softfp -mfpu=neo
 KBUILD_CFLAGS	+= $(call cc-option,--param=allow-store-data-races=0)
 
 #KBUILD_CFLAGS	+= -flto
+KBUILD_CFLAGS	+= -w
 
 # GCC extras
 KBUILD_CFLAGS	+= -fgcse-sm -fgcse-las -fsched-spec-load -fsched-pressure \
