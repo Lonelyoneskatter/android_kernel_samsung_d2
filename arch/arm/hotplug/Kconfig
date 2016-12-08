@@ -77,3 +77,9 @@ config ALUCARD_HOTPLUG
 	default y
 	help
 	  Generic Alucard-hotplug cpu hotplug driver for ARM SOCs
+
+config DYNAMIC_HOTPLUG
+	bool "Enable dynamic-hotplug cpu hotplug driver"
+	default y
+	help
+	  Generic Dynamic-hotplug cpu hotplug driver for ARM SOCs
