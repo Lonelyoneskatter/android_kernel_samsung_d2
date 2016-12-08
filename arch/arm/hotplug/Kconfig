@@ -1,3 +1,44 @@
+config ALUCARD_HOTPLUG
+	bool "Enable alucard-hotplug cpu hotplug driver"
+	default y
+	help
+	  Generic Alucard-hotplug cpu hotplug driver for ARM SOCs
+
+config ASMP
+        bool "Multi-core automatic hotplug support"
+        depends on SMP && HOTPLUG_CPU
+        default n
+        help
+          Automatically hotplugs the multiple cpu cores on and off
+          based on cpu load and suspend state
+
+config BLU_PLUG
+	bool "Dynamic hotplug driver"
+	depends on HOTPLUG_CPU
+	default n
+	help
+	  The Dynamic hotplug driver automatically online/offline CPUs proportional to system load.
+
+config BRICKED_HOTPLUG
+	bool "Enable kernel based mpdecision"
+	depends on MSM_RUN_QUEUE_STATS
+	default y
+	help
+	  This enables kernel based multi core control.
+	  (up/down hotplug based on load)
+
+config DYNAMIC_HOTPLUG
+	bool "Enable dynamic-hotplug cpu hotplug driver"
+	default y
+	help
+	  Generic Dynamic-hotplug cpu hotplug driver for ARM SOCs
+
+config INTELLI_PLUG
+	bool "Enable intelli-plug cpu hotplug driver"
+	default n
+	help
+	  Generic Intelli-plug cpu hotplug driver for ARM SOCs
+
 config MSM_HOTPLUG
 	bool "MSM hotplug driver"
 	depends on HOTPLUG_CPU
@@ -13,13 +54,14 @@ config MSM_SLEEPER
 	  CPU hotplug driver controls on-/offlining of additional cores based
 	  on suspend/resume.
 
-config ASMP
-        bool "Multi-core automatic hotplug support"
-        depends on SMP && HOTPLUG_CPU
-        default n
-        help
-          Automatically hotplugs the multiple cpu cores on and off
-          based on cpu load and suspend state
+config STATE_NOTIFIER
+        bool "State Notifier"
+
+config THUNDER_PLUG
+      bool "Enable plugging down/up of cores using powersuspend"
+      help
+       This driver uses powersuspend to take down the cpu cores
+       on a octa core device. Tuned to work on a dual core device.
 
 config ZEN_DECISION
 	bool "Zen Decision MPDecision Replacement"
@@ -41,45 +83,3 @@ config ZEN_DECISION
 	  delegated to somewhere else in the kernel (Such as in CPU-BOOST)
 
 	  Enable this if you'd like the ability to disable MPDecision.
-
-config THUNDER_PLUG
-      bool "Enable plugging down/up of cores using powersuspend"
-      help
-       This driver uses powersuspend to take down the cpu cores
-       on a octa core device. Tuned to work on a dual core device.
-
-config BRICKED_HOTPLUG
-	bool "Enable kernel based mpdecision"
-	depends on MSM_RUN_QUEUE_STATS
-	default y
-	help
-	  This enables kernel based multi core control.
-	  (up/down hotplug based on load)
-
-config BLU_PLUG
-	bool "Dynamic hotplug driver"
-	depends on HOTPLUG_CPU
-	default n
-	help
-	  The Dynamic hotplug driver automatically online/offline CPUs proportional to system load.
-
-config STATE_NOTIFIER
-        bool "State Notifier"
-
-config INTELLI_PLUG
-	bool "Enable intelli-plug cpu hotplug driver"
-	default n
-	help
-	  Generic Intelli-plug cpu hotplug driver for ARM SOCs
-
-config ALUCARD_HOTPLUG
-	bool "Enable alucard-hotplug cpu hotplug driver"
-	default y
-	help
-	  Generic Alucard-hotplug cpu hotplug driver for ARM SOCs
-
-config DYNAMIC_HOTPLUG
-	bool "Enable dynamic-hotplug cpu hotplug driver"
-	default y
-	help
-	  Generic Dynamic-hotplug cpu hotplug driver for ARM SOCs
