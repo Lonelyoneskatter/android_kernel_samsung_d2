@@ -49,8 +49,9 @@
 #include <asm/unaligned.h>
 #include "mms_ts_fw.h"
 
-#ifdef CONFIG_STATE_NOTIFIER
+#if defined(CONFIG_STATE_NOTIFIER) || defined(CONFIG_POWERSUSPEND)
 #include <linux/state_notifier.h>
+#include <linux/powersuspend.h>
 #endif
 
 #define MAX_FINGERS		10
@@ -3102,12 +3103,17 @@ static int mms_ts_suspend(struct device *dev)
 	release_all_fingers(info);
 	info->pdata->vdd_on(0);
 	msleep(50);
+#if defined(CONFIG_STATE_NOTIFIER) || defined(CONFIG_POWERSUSPEND)
+    if (state_suspended == true) {
+	state_suspend();
+    } else if (power_suspended == true) {
+    set_power_suspend_state_panel_hook(POWER_SUSPEND_ACTIVE);
+    }
+#endif
 
 out:
 	mutex_unlock(&info->input_dev->mutex);
-#ifdef CONFIG_STATE_NOTIFIER
-	state_suspend();
-#endif
+
 	return 0;
 }
 
@@ -3136,8 +3142,12 @@ static int mms_ts_resume(struct device *dev)
 		ret = mms_ts_enable(info, 0);
 	mutex_unlock(&info->input_dev->mutex);
 
-#ifdef CONFIG_STATE_NOTIFIER
+#if defined(CONFIG_STATE_NOTIFIER) || defined(CONFIG_POWERSUSPEND)
+    if (state_suspended == false) {
 	state_resume();
+    } else if (power_suspended == false) {
+    set_power_suspend_state_panel_hook(POWER_SUSPEND_INACTIVE);
+    }
 #endif
 	return ret;
 }
