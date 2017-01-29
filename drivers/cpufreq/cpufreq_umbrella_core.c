@@ -110,7 +110,7 @@ static spinlock_t speedchange_cpumask_lock;
 static struct mutex gov_lock;
 
 /* Hi speed to bump to from lo speed when load burst (default max) */
-#define DEFAULT_HISPEED_FREQ 486000
+#define DEFAULT_HISPEED_FREQ 384000
 static unsigned int hispeed_freq = DEFAULT_HISPEED_FREQ;
 
 /* Go to hi speed when CPU load at or above this value. */
@@ -136,7 +136,7 @@ static unsigned long min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
 /*
  * The sample rate of the timer used to increase frequency
  */
-#define DEFAULT_TIMER_RATE (20 * USEC_PER_MSEC)
+#define DEFAULT_TIMER_RATE 60000
 static unsigned long timer_rate = DEFAULT_TIMER_RATE;
 
 /* Busy SDF parameters*/
@@ -156,7 +156,7 @@ static int nabove_hispeed_delay = ARRAY_SIZE(default_above_hispeed_delay);
 /* Non-zero means indefinite speed boost active */
 static int boost_val;
 /* Duration of a boot pulse in usecs */
-static int boostpulse_duration_val = DEFAULT_MIN_SAMPLE_TIME;
+static int boostpulse_duration_val = 0;
 /* End time of boost pulse in ktime converted to usecs */
 static u64 boostpulse_endtime;
 
@@ -173,7 +173,8 @@ unsigned int max_inactive_freq = DEFAULT_INACTIVE_FREQ_ON;
 unsigned int max_inactive_freq_screen_on = DEFAULT_INACTIVE_FREQ_ON;
 unsigned int max_inactive_freq_screen_off = DEFAULT_INACTIVE_FREQ_OFF;
 
-static bool io_is_busy;
+#define DEFAULT_IO_IS_BUSY 1
+static bool io_is_busy = DEFAULT_IO_IS_BUSY;
 
 #ifdef CONFIG_UC_MODE_AUTO_CHANGE
 struct cpufreq_loadinfo {
@@ -191,7 +192,7 @@ static spinlock_t mode_lock;
 #define NO_MODE	0
 
 static unsigned int mode = MULTI_MODE;
-static unsigned int enforced_mode = MULTI_MODE;
+static unsigned int enforced_mode = SINGLE_MODE;
 static u64 mode_check_timestamp = 0;
 
 #define DEFAULT_MULTI_ENTER_TIME (4 * DEFAULT_TIMER_RATE)
@@ -250,9 +251,9 @@ static struct work_struct mode_auto_change_boost_work;
  * up_threshold_any_cpu_freq then do not let the frequency to drop below
  * sync_freq
  */
-#define DEFAULT_SYNC_FREQ 756000
-#define DEFAULT_UP_THRESHOLD_ANY_CPU_LOAD 50
-#define DEFAULT_UP_THRESHOLD_ANY_CPU_FREQ 1242000
+#define DEFAULT_SYNC_FREQ 486000
+#define DEFAULT_UP_THRESHOLD_ANY_CPU_FREQ 1134000
+#define DEFAULT_UP_THRESHOLD_ANY_CPU_LOAD 90
 static unsigned int up_threshold_any_cpu_load = DEFAULT_UP_THRESHOLD_ANY_CPU_LOAD;
 static unsigned int sync_freq = DEFAULT_SYNC_FREQ;
 static unsigned int up_threshold_any_cpu_freq = DEFAULT_UP_THRESHOLD_ANY_CPU_FREQ;
