@@ -623,13 +623,11 @@ KBUILD_CFLAGS	+= -fsanitize=leak -fno-diagnostics-show-caret -fno-pic \
                    -DNDEBUG -g0 -fivopts -fstdarg-opt
 
 # New in GCC5
-ifeq ($(call cc-ifversion, -ge, 0501,y),y)
 KBUILD_CFLAGS	+= -flra-remat -fipa-ra -fipa-pta
 KBUILD_CFLAGS	+= -fira-hoist-pressure -fira-loop-pressure \
 		   -fsched2-use-superblocks -fno-semantic-interposition -floop-nest-optimize \
 		   -ftree-loop-if-convert -ftree-loop-distribution -ftree-loop-distribute-patterns \
 		   -fvariable-expansion-in-unroller
-endif
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
