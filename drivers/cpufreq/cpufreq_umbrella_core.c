@@ -153,13 +153,6 @@ static spinlock_t above_hispeed_delay_lock;
 static unsigned int *above_hispeed_delay = default_above_hispeed_delay;
 static int nabove_hispeed_delay = ARRAY_SIZE(default_above_hispeed_delay);
 
-/* Non-zero means indefinite speed boost active */
-static int boost_val;
-/* Duration of a boot pulse in usecs */
-static int boostpulse_duration_val = 0;
-/* End time of boost pulse in ktime converted to usecs */
-static u64 boostpulse_endtime;
-
 /*
  * Max additional time to wait in idle, beyond timer_rate, at speeds above
  * minimum before wakeup to reduce speed, or -1 if unnecessary.
@@ -192,7 +185,7 @@ static spinlock_t mode_lock;
 #define NO_MODE	0
 
 static unsigned int mode = MULTI_MODE;
-static unsigned int enforced_mode = SINGLE_MODE;
+static unsigned int enforced_mode = MULTI_MODE;
 static u64 mode_check_timestamp = 0;
 
 #define DEFAULT_MULTI_ENTER_TIME (4 * DEFAULT_TIMER_RATE)
@@ -622,7 +615,6 @@ static void cpufreq_umbrella_core_timer(unsigned long data)
 	unsigned int loadadjfreq;
 	unsigned int index;
 	unsigned long flags;
-	bool boosted;
 	unsigned long mod_min_sample_time;
 	int i, max_load;
 	unsigned int max_freq;
@@ -674,10 +666,9 @@ static void cpufreq_umbrella_core_timer(unsigned long data)
 	loadadjfreq = (unsigned int)cputime_speedadj * 100;
 	cpu_load = loadadjfreq / pcpu->target_freq;
 	pcpu->prev_load = cpu_load;
-	boosted = boost_val || now < boostpulse_endtime;
 	pcpu->policy->util = cpu_load;
 
-	if (cpu_load >= go_hispeed_load || boosted) {
+	if (cpu_load >= go_hispeed_load) {
 		if (pcpu->target_freq < hispeed_freq) {
 			new_freq = hispeed_freq;
 		} else {
@@ -766,7 +757,7 @@ static void cpufreq_umbrella_core_timer(unsigned long data)
 	 * (or the indefinite boost is turned off).
 	 */
 
-	if (!boosted || new_freq > hispeed_freq) {
+	if (new_freq > hispeed_freq) {
 		pcpu->floor_freq = new_freq;
 		pcpu->floor_validate_time = now;
 	}
@@ -934,41 +925,6 @@ static int cpufreq_umbrella_core_speedchange_task(void *data)
 	}
 
 	return 0;
-}
-
-static void cpufreq_umbrella_core_boost(void)
-{
-	int i;
-	int anyboost = 0;
-	unsigned long flags;
-	struct cpufreq_umbrella_core_cpuinfo *pcpu;
-
-	spin_lock_irqsave(&speedchange_cpumask_lock, flags);
-
-	for_each_online_cpu(i) {
-		pcpu = &per_cpu(cpuinfo, i);
-
-		if (pcpu->target_freq < hispeed_freq) {
-			pcpu->target_freq = hispeed_freq;
-			cpumask_set_cpu(i, &speedchange_cpumask);
-			pcpu->hispeed_validate_time =
-				ktime_to_us(ktime_get());
-			anyboost = 1;
-		}
-
-		/*
-		 * Set floor freq and (re)start timer for when last
-		 * validated.
-		 */
-
-		pcpu->floor_freq = hispeed_freq;
-		pcpu->floor_validate_time = ktime_to_us(ktime_get());
-	}
-
-	spin_unlock_irqrestore(&speedchange_cpumask_lock, flags);
-
-	if (anyboost)
-		wake_up_process(speedchange_task);
 }
 
 static int cpufreq_umbrella_core_notifier(
@@ -1401,78 +1357,6 @@ static ssize_t store_timer_slack(
 
 define_one_global_rw(timer_slack);
 
-static ssize_t show_boost(struct kobject *kobj, struct attribute *attr,
-			  char *buf)
-{
-	return sprintf(buf, "%d\n", boost_val);
-}
-
-static ssize_t store_boost(struct kobject *kobj, struct attribute *attr,
-			   const char *buf, size_t count)
-{
-	int ret;
-	unsigned long val;
-
-	ret = kstrtoul(buf, 0, &val);
-	if (ret < 0)
-		return ret;
-
-	boost_val = val;
-
-	if (boost_val) {
-		trace_cpufreq_umbrella_core_boost("on");
-		cpufreq_umbrella_core_boost();
-	} else {
-		trace_cpufreq_umbrella_core_unboost("off");
-	}
-
-	return count;
-}
-
-define_one_global_rw(boost);
-
-static ssize_t store_boostpulse(struct kobject *kobj, struct attribute *attr,
-				const char *buf, size_t count)
-{
-	int ret;
-	unsigned long val;
-
-	ret = kstrtoul(buf, 0, &val);
-	if (ret < 0)
-		return ret;
-
-	boostpulse_endtime = ktime_to_us(ktime_get()) + boostpulse_duration_val;
-	trace_cpufreq_umbrella_core_boost("pulse");
-	cpufreq_umbrella_core_boost();
-	return count;
-}
-
-static struct global_attr boostpulse =
-	__ATTR(boostpulse, 0200, NULL, store_boostpulse);
-
-static ssize_t show_boostpulse_duration(
-	struct kobject *kobj, struct attribute *attr, char *buf)
-{
-	return sprintf(buf, "%d\n", boostpulse_duration_val);
-}
-
-static ssize_t store_boostpulse_duration(
-	struct kobject *kobj, struct attribute *attr, const char *buf,
-	size_t count)
-{
-	int ret;
-	unsigned long val;
-
-	ret = kstrtoul(buf, 0, &val);
-	if (ret < 0)
-		return ret;
-
-	boostpulse_duration_val = val;
-	return count;
-}
-
-define_one_global_rw(boostpulse_duration);
-
 static ssize_t show_io_is_busy(struct kobject *kobj,
 			struct attribute *attr, char *buf)
 {
@@ -1759,9 +1643,6 @@ static struct attribute *umbrella_core_attributes[] = {
 	&min_sample_time_attr.attr,
 	&timer_rate_attr.attr,
 	&timer_slack.attr,
-	&boost.attr,
-	&boostpulse.attr,
-	&boostpulse_duration.attr,
 	&io_is_busy_attr.attr,
 	&sampling_down_factor_attr.attr,
 	&sync_freq_attr.attr,
