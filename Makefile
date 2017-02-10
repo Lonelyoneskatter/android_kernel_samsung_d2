@@ -595,6 +595,7 @@ KBUILD_CFLAGS	+= -fsection-anchors -ftracer -frename-registers -fgcse-sm -fgcse-
 KBUILD_CFLAGS	+= -fmodulo-sched -fmodulo-sched-allow-regmoves -fweb -fsection-anchors
 KBUILD_CFLAGS	+= -mcpu=cortex-a15 -mtune=cortex-a15 -mfloat-abi=softfp -mfpu=neon-vfpv4 \
                    -mvectorize-with-neon-quad -Ofast -mfloat-abi=softfp -marm -ffast-math -fipa-cp-clone
+KBUILD_CFLAGS	+= -fdelete-null-pointer-checks -fexpensive-optimizations -foptimize-sibling-calls -foptimize-strlen
 
 # Tell gcc to never replace conditional load with a non-conditional one
 KBUILD_CFLAGS	+= $(call cc-option,--param=allow-store-data-races=0)
