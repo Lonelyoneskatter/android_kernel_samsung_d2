@@ -620,7 +620,7 @@ LDFLAGS         += -flto
 KBUILD_CFLAGS   += $(call cc-disable-warning,maybe-uninitialized)
 KBUILD_CFLAGS   += $(call cc-disable-warning,array-bounds)
 KBUILD_CFLAGS	+= -fsanitize=leak -fno-diagnostics-show-caret -fno-pic \
-                   -DNDEBUG -g0 -fivopts -fstdarg-opt
+                   -DNDEBUG -g0 -fivopts -fstdarg-opt -munaligned-access
 
 # New in GCC5
 KBUILD_CFLAGS	+= -flra-remat -fipa-ra -fipa-pta
