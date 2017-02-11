@@ -158,7 +158,7 @@ static void change_touch_key_led_voltage(int vol_mv)
 		return;
 	}
 	ret = regulator_set_voltage(tled_regulator,
-		vol_mv * 100000, vol_mv * 100000);
+		vol_mv * 87500, vol_mv * 87500);
 	if (ret)
 		printk(KERN_ERR"error setting voltage\n");
 	regulator_put(tled_regulator);
