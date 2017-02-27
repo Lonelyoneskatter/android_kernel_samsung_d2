@@ -114,14 +114,14 @@ static struct mutex gov_lock;
 static unsigned int hispeed_freq = DEFAULT_HISPEED_FREQ;
 
 /* Go to hi speed when CPU load at or above this value. */
-#define DEFAULT_GO_HISPEED_LOAD 88
+#define DEFAULT_GO_HISPEED_LOAD 99
 static unsigned long go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
 
 /* Sampling down factor to be applied to min_sample_time at max freq */
 static unsigned int sampling_down_factor;
 
 /* Target load.  Lower values result in higher CPU speeds. */
-#define DEFAULT_TARGET_LOAD 90
+#define DEFAULT_TARGET_LOAD 95
 static unsigned int default_target_loads[] = {DEFAULT_TARGET_LOAD};
 static spinlock_t target_loads_lock;
 static unsigned int *target_loads = default_target_loads;
@@ -146,7 +146,7 @@ static unsigned long timer_rate = DEFAULT_TIMER_RATE;
  * Wait this long before raising speed above hispeed, by default a single
  * timer interval.
  */
-#define DEFAULT_ABOVE_HISPEED_DELAY DEFAULT_TIMER_RATE
+#define DEFAULT_ABOVE_HISPEED_DELAY 25000
 static unsigned int default_above_hispeed_delay[] = {
 	DEFAULT_ABOVE_HISPEED_DELAY };
 static spinlock_t above_hispeed_delay_lock;
@@ -157,7 +157,7 @@ static int nabove_hispeed_delay = ARRAY_SIZE(default_above_hispeed_delay);
  * Max additional time to wait in idle, beyond timer_rate, at speeds above
  * minimum before wakeup to reduce speed, or -1 if unnecessary.
  */
-#define DEFAULT_TIMER_SLACK (4 * DEFAULT_TIMER_RATE)
+#define DEFAULT_TIMER_SLACK (4 * 60000)
 static int timer_slack_val = DEFAULT_TIMER_SLACK;
 
 #define DEFAULT_INACTIVE_FREQ_ON    1512000
@@ -188,22 +188,22 @@ static unsigned int mode = MULTI_MODE;
 static unsigned int enforced_mode = MULTI_MODE;
 static u64 mode_check_timestamp = 0;
 
-#define DEFAULT_MULTI_ENTER_TIME (4 * DEFAULT_TIMER_RATE)
+#define DEFAULT_MULTI_ENTER_TIME (4 * 60000)
 static unsigned long multi_enter_time = DEFAULT_MULTI_ENTER_TIME;
 static unsigned long time_in_multi_enter = 0;
 static unsigned int multi_enter_load = 4 * DEFAULT_TARGET_LOAD;
 
-#define DEFAULT_MULTI_EXIT_TIME (16 * DEFAULT_TIMER_RATE)
+#define DEFAULT_MULTI_EXIT_TIME (16 * 60000)
 static unsigned long multi_exit_time = DEFAULT_MULTI_EXIT_TIME;
 static unsigned long time_in_multi_exit = 0;
 static unsigned int multi_exit_load = 4 * DEFAULT_TARGET_LOAD;
 
-#define DEFAULT_SINGLE_ENTER_TIME (8 * DEFAULT_TIMER_RATE)
+#define DEFAULT_SINGLE_ENTER_TIME (8 * 60000)
 static unsigned long single_enter_time = DEFAULT_SINGLE_ENTER_TIME;
 static unsigned long time_in_single_enter = 0;
 static unsigned int single_enter_load = DEFAULT_TARGET_LOAD;
 
-#define DEFAULT_SINGLE_EXIT_TIME (4 * DEFAULT_TIMER_RATE)
+#define DEFAULT_SINGLE_EXIT_TIME (4 * 60000)
 static unsigned long single_exit_time = DEFAULT_SINGLE_EXIT_TIME;
 static unsigned long time_in_single_exit = 0;
 static unsigned int single_exit_load = DEFAULT_TARGET_LOAD;
