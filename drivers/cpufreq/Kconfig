@@ -210,6 +210,17 @@ config CPU_FREQ_DEFAULT_GOV_POWERSAVE
 	  the frequency statically to the lowest frequency supported by
 	  the CPU.
 
+config CPU_FREQ_DEFAULT_GOV_SKATTER_CORE
+	bool "skatter_core"
+	select CPU_FREQ_GOV_SKATTER_CORE
+	help
+	  Frequency governor 'umbrella_core' heavily modified for D2 devices
+          Renamed as 'skatter_core'
+	  Use the CPUFreq governor 'skatter_core' as default. This allows
+	  you to get a full dynamic cpu frequency capable system by simply
+	  loading your cpufreq low-level hardware driver, using the
+	  'skatter_core' governor for latency-sensitive workloads.
+
 config CPU_FREQ_DEFAULT_GOV_SMARTMAX
         bool "smartmax"
         select CPU_FREQ_GOV_SMARTMAX
@@ -233,15 +244,6 @@ config CPU_FREQ_DEFAULT_GOV_UBERDEMAND
 	select CPU_FREQ_GOV_UBERDEMAND
 	select CPU_FREQ_GOV_PERFORMANCE
 	help
-
-config CPU_FREQ_DEFAULT_GOV_UMBRELLA_CORE
-	bool "umbrella_core"
-	select CPU_FREQ_GOV_UMBRELLA_CORE
-	help
-	  Use the CPUFreq governor 'umbrella_core' as default. This allows
-	  you to get a full dynamic cpu frequency capable system by simply
-	  loading your cpufreq low-level hardware driver, using the
-	  'umbrella_core' governor for latency-sensitive workloads.
 
 config CPU_FREQ_DEFAULT_GOV_USERSPACE
 	bool "userspace"
@@ -451,6 +453,14 @@ config CPU_FREQ_GOV_POWERSAVE
 
 	  If in doubt, say Y.
 
+config CPU_FREQ_GOV_SKATTER_CORE
+	tristate "'skatter_core' cpufreq policy governor"
+ 	help
+	  'skatter_core' - This driver adds a dynamic cpufreq policy governor
+	  designed for latency-sensitive workloads.
+	  The governor is based on interactive to provide a resident controller
+	  which interprets unnecessary battery drain as evil
+
 config CPU_FREQ_GOV_SMARTMAX
         tristate "'smartmax' cpufreq policy governor"
         select CPU_FREQ_TABLE
@@ -482,14 +492,6 @@ config CPU_FREQ_GOV_UBERDEMAND
 	tristate "'uberdemand' cpufreq policy governor"
 	select CPU_FREQ_TABLE
 	help
-
-config CPU_FREQ_GOV_UMBRELLA_CORE
-	tristate "'umbrella_core' cpufreq policy governor"
- 	help
-	  'umbrella_core' - This driver adds a dynamic cpufreq policy governor
-	  designed for latency-sensitive workloads.
-	  The governor is based on interactive to provide a resident controller
-	  which interprets unnecessary battery drain as evil
 
 config CPU_FREQ_GOV_USERSPACE
 	tristate "'userspace' governor for userspace frequency scaling"

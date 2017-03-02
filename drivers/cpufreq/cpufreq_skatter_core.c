@@ -1,5 +1,5 @@
 /*
- * drivers/cpufreq/cpufreq_umbrella_core.c
+ * drivers/cpufreq/cpufreq_skatter_core.c
  *
  * Copyright (C) 2010 Google, Inc.
  *           (C) 2014 LoungeKatt <twistedumbrella@gmail.com>
@@ -32,7 +32,7 @@
 #include <asm/cputime.h>
 #include <linux/clk.h>
 #define CREATE_TRACE_POINTS
-#include <trace/events/cpufreq_umbrella_core.h>
+#include <trace/events/cpufreq_skatter_core.h>
 
 #define CREATE_TRACE_POINTS
 #ifdef CONFIG_POWERSUSPEND
@@ -78,7 +78,7 @@ int request_bimc_clk(unsigned long request_clk)
 	return 0;
 }
 
-struct cpufreq_umbrella_core_cpuinfo {
+struct cpufreq_skatter_core_cpuinfo {
 	struct timer_list cpu_timer;
 	struct timer_list cpu_slack_timer;
 	spinlock_t load_lock; /* protects the next 4 fields */
@@ -101,7 +101,7 @@ struct cpufreq_umbrella_core_cpuinfo {
 
 #define MIN_TIMER_JIFFIES 1UL
 
-static DEFINE_PER_CPU(struct cpufreq_umbrella_core_cpuinfo, cpuinfo);
+static DEFINE_PER_CPU(struct cpufreq_skatter_core_cpuinfo, cpuinfo);
 
 /* realtime thread handles frequency scaling */
 static struct task_struct *speedchange_task;
@@ -251,21 +251,21 @@ static unsigned int up_threshold_any_cpu_load = DEFAULT_UP_THRESHOLD_ANY_CPU_LOA
 static unsigned int sync_freq = DEFAULT_SYNC_FREQ;
 static unsigned int up_threshold_any_cpu_freq = DEFAULT_UP_THRESHOLD_ANY_CPU_FREQ;
 
-static int cpufreq_governor_umbrella_core(struct cpufreq_policy *policy,
+static int cpufreq_governor_skatter_core(struct cpufreq_policy *policy,
 		unsigned int event);
 
-#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_UMBRELLA_CORE
+#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_SKATTER_CORE
 static
 #endif
-struct cpufreq_governor cpufreq_gov_umbrella_core = {
-	.name = "umbrella_core",
-	.governor = cpufreq_governor_umbrella_core,
+struct cpufreq_governor cpufreq_gov_skatter_core = {
+	.name = "skatter_core",
+	.governor = cpufreq_governor_skatter_core,
 	.max_transition_latency = 10000000,
 	.owner = THIS_MODULE,
 };
 
-static void cpufreq_umbrella_core_timer_resched(
-	struct cpufreq_umbrella_core_cpuinfo *pcpu)
+static void cpufreq_skatter_core_timer_resched(
+	struct cpufreq_skatter_core_cpuinfo *pcpu)
 {
 	unsigned long expires;
 	unsigned long flags;
@@ -291,9 +291,9 @@ static void cpufreq_umbrella_core_timer_resched(
  * The cpu_timer and cpu_slack_timer must be deactivated when calling this
  * function.
  */
-static void cpufreq_umbrella_core_timer_start(int cpu, int time_override)
+static void cpufreq_skatter_core_timer_start(int cpu, int time_override)
 {
-	struct cpufreq_umbrella_core_cpuinfo *pcpu = &per_cpu(cpuinfo, cpu);
+	struct cpufreq_skatter_core_cpuinfo *pcpu = &per_cpu(cpuinfo, cpu);
 	unsigned long flags;
 	unsigned long expires;
 	if (time_override)
@@ -360,7 +360,7 @@ static unsigned int freq_to_targetload(unsigned int freq)
  */
 
 static unsigned int choose_freq(
-	struct cpufreq_umbrella_core_cpuinfo *pcpu, unsigned int loadadjfreq)
+	struct cpufreq_skatter_core_cpuinfo *pcpu, unsigned int loadadjfreq)
 {
 	unsigned int freq = pcpu->policy->cur;
 	unsigned int prevfreq, freqmin, freqmax;
@@ -446,7 +446,7 @@ static unsigned int choose_freq(
 
 static u64 update_load(int cpu)
 {
-	struct cpufreq_umbrella_core_cpuinfo *pcpu = &per_cpu(cpuinfo, cpu);
+	struct cpufreq_skatter_core_cpuinfo *pcpu = &per_cpu(cpuinfo, cpu);
 	u64 now;
 	u64 now_idle;
 	unsigned int delta_idle;
@@ -542,7 +542,7 @@ static unsigned int check_mode(int cpu, unsigned int cur_mode, u64 now)
 			ret &= ~MULTI_MODE;
 	}
 
-	trace_cpufreq_umbrella_core_mode(cpu, total_load,
+	trace_cpufreq_skatter_core_mode(cpu, total_load,
 		time_in_single_enter, time_in_multi_enter,
 		time_in_single_exit, time_in_multi_exit, ret);
 
@@ -603,13 +603,13 @@ static void exit_mode(void)
 }
 #endif
 
-static void cpufreq_umbrella_core_timer(unsigned long data)
+static void cpufreq_skatter_core_timer(unsigned long data)
 {
 	u64 now;
 	unsigned int delta_time;
 	u64 cputime_speedadj;
 	int cpu_load;
-	struct cpufreq_umbrella_core_cpuinfo *pcpu =
+	struct cpufreq_skatter_core_cpuinfo *pcpu =
 		&per_cpu(cpuinfo, data);
 	unsigned int new_freq;
 	unsigned int loadadjfreq;
@@ -618,7 +618,7 @@ static void cpufreq_umbrella_core_timer(unsigned long data)
 	unsigned long mod_min_sample_time;
 	int i, max_load;
 	unsigned int max_freq;
-	struct cpufreq_umbrella_core_cpuinfo *picpu;
+	struct cpufreq_skatter_core_cpuinfo *picpu;
 #ifdef CONFIG_UC_MODE_AUTO_CHANGE
 	unsigned int new_mode;
 #endif
@@ -708,7 +708,7 @@ static void cpufreq_umbrella_core_timer(unsigned long data)
 	    new_freq > pcpu->target_freq &&
 	    now - pcpu->hispeed_validate_time <
 	    freq_to_above_hispeed_delay(pcpu->target_freq)) {
-		trace_cpufreq_umbrella_core_notyet(
+		trace_cpufreq_skatter_core_notyet(
 			data, cpu_load, pcpu->target_freq,
 			pcpu->policy->cur, new_freq);
 		goto rearm;
@@ -742,7 +742,7 @@ static void cpufreq_umbrella_core_timer(unsigned long data)
 
 	if (new_freq < pcpu->floor_freq) {
 		if (now - pcpu->floor_validate_time < mod_min_sample_time) {
-			trace_cpufreq_umbrella_core_notyet(
+			trace_cpufreq_skatter_core_notyet(
 				data, cpu_load, pcpu->target_freq,
 				pcpu->policy->cur, new_freq);
 			goto rearm;
@@ -764,13 +764,13 @@ static void cpufreq_umbrella_core_timer(unsigned long data)
 
     if (pcpu->target_freq == new_freq &&
         pcpu->target_freq <= pcpu->policy->cur) {
-		trace_cpufreq_umbrella_core_already(
+		trace_cpufreq_skatter_core_already(
 			data, cpu_load, pcpu->target_freq,
 			pcpu->policy->cur, new_freq);
 		goto rearm_if_notmax;
 	}
 
-	trace_cpufreq_umbrella_core_target(data, cpu_load, pcpu->target_freq,
+	trace_cpufreq_skatter_core_target(data, cpu_load, pcpu->target_freq,
 					 pcpu->policy->cur, new_freq);
 
 	pcpu->target_freq = new_freq;
@@ -793,16 +793,16 @@ rearm_if_notmax:
 
 rearm:
 	if (!timer_pending(&pcpu->cpu_timer))
-		cpufreq_umbrella_core_timer_resched(pcpu);
+		cpufreq_skatter_core_timer_resched(pcpu);
 
 exit:
 	up_read(&pcpu->enable_sem);
 	return;
 }
 
-static void cpufreq_umbrella_core_idle_start(void)
+static void cpufreq_skatter_core_idle_start(void)
 {
-	struct cpufreq_umbrella_core_cpuinfo *pcpu =
+	struct cpufreq_skatter_core_cpuinfo *pcpu =
 		&per_cpu(cpuinfo, smp_processor_id());
 	int pending;
 	u64 now;
@@ -826,7 +826,7 @@ static void cpufreq_umbrella_core_idle_start(void)
 		 * the CPUFreq driver.
 		 */
 		if (!pending) {
-			cpufreq_umbrella_core_timer_resched(pcpu);
+			cpufreq_skatter_core_timer_resched(pcpu);
 
 			now = ktime_to_us(ktime_get());
 			if ((pcpu->policy->cur == pcpu->policy->max) &&
@@ -841,9 +841,9 @@ static void cpufreq_umbrella_core_idle_start(void)
 	up_read(&pcpu->enable_sem);
 }
 
-static void cpufreq_umbrella_core_idle_end(void)
+static void cpufreq_skatter_core_idle_end(void)
 {
-	struct cpufreq_umbrella_core_cpuinfo *pcpu =
+	struct cpufreq_skatter_core_cpuinfo *pcpu =
 		&per_cpu(cpuinfo, smp_processor_id());
 
 	if (!down_read_trylock(&pcpu->enable_sem))
@@ -855,22 +855,22 @@ static void cpufreq_umbrella_core_idle_end(void)
 
 	/* Arm the timer for 1-2 ticks later if not already. */
 	if (!timer_pending(&pcpu->cpu_timer)) {
-		cpufreq_umbrella_core_timer_resched(pcpu);
+		cpufreq_skatter_core_timer_resched(pcpu);
 	} else if (time_after_eq(jiffies, pcpu->cpu_timer.expires)) {
 		del_timer(&pcpu->cpu_timer);
 		del_timer(&pcpu->cpu_slack_timer);
-		cpufreq_umbrella_core_timer(smp_processor_id());
+		cpufreq_skatter_core_timer(smp_processor_id());
 	}
 
 	up_read(&pcpu->enable_sem);
 }
 
-static int cpufreq_umbrella_core_speedchange_task(void *data)
+static int cpufreq_skatter_core_speedchange_task(void *data)
 {
 	unsigned int cpu;
 	cpumask_t tmp_mask;
 	unsigned long flags;
-	struct cpufreq_umbrella_core_cpuinfo *pcpu;
+	struct cpufreq_skatter_core_cpuinfo *pcpu;
 
 	while (1) {
 		set_current_state(TASK_INTERRUPTIBLE);
@@ -905,7 +905,7 @@ static int cpufreq_umbrella_core_speedchange_task(void *data)
 			}
 
 			for_each_cpu(j, pcpu->policy->cpus) {
-				struct cpufreq_umbrella_core_cpuinfo *pjcpu =
+				struct cpufreq_skatter_core_cpuinfo *pjcpu =
 					&per_cpu(cpuinfo, j);
 
 				if (pjcpu->target_freq > max_freq)
@@ -916,7 +916,7 @@ static int cpufreq_umbrella_core_speedchange_task(void *data)
 				__cpufreq_driver_target(pcpu->policy,
 							max_freq,
 							CPUFREQ_RELATION_H);
-			trace_cpufreq_umbrella_core_setspeed(cpu,
+			trace_cpufreq_skatter_core_setspeed(cpu,
 						     pcpu->target_freq,
 						     pcpu->policy->cur);
 
@@ -927,11 +927,11 @@ static int cpufreq_umbrella_core_speedchange_task(void *data)
 	return 0;
 }
 
-static int cpufreq_umbrella_core_notifier(
+static int cpufreq_skatter_core_notifier(
 	struct notifier_block *nb, unsigned long val, void *data)
 {
 	struct cpufreq_freqs *freq = data;
-	struct cpufreq_umbrella_core_cpuinfo *pcpu;
+	struct cpufreq_skatter_core_cpuinfo *pcpu;
 	int cpu;
 	unsigned long flags;
 
@@ -945,7 +945,7 @@ static int cpufreq_umbrella_core_notifier(
 		}
 
 		for_each_cpu(cpu, pcpu->policy->cpus) {
-			struct cpufreq_umbrella_core_cpuinfo *pjcpu =
+			struct cpufreq_skatter_core_cpuinfo *pjcpu =
 				&per_cpu(cpuinfo, cpu);
 			if (cpu != freq->cpu) {
 				if (!down_read_trylock(&pjcpu->enable_sem))
@@ -968,7 +968,7 @@ static int cpufreq_umbrella_core_notifier(
 }
 
 static struct notifier_block cpufreq_notifier_block = {
-	.notifier_call = cpufreq_umbrella_core_notifier,
+	.notifier_call = cpufreq_skatter_core_notifier,
 };
 
 static unsigned int *get_tokenized_data(const char *buf, int *num_tokens)
@@ -1396,7 +1396,7 @@ static ssize_t store_bimc_hispeed_freq(struct kobject *kobj,
 	if (ret < 0)
 		return ret;
 	bimc_hispeed_freq = val;
-	pr_info("cpufreq-umbrella_core: bimc_hispeed_freq will be set to : (input)%lu \n", bimc_hispeed_freq);
+	pr_info("cpufreq-skatter_core: bimc_hispeed_freq will be set to : (input)%lu \n", bimc_hispeed_freq);
 
 	return count;
 }
@@ -1635,7 +1635,7 @@ time(single_enter_time, single_enter_time_attr);
 time(single_exit_time, single_exit_time_attr);
 
 #endif
-static struct attribute *umbrella_core_attributes[] = {
+static struct attribute *skatter_core_attributes[] = {
 	&target_loads_attr.attr,
 	&above_hispeed_delay_attr.attr,
 	&hispeed_freq_attr.attr,
@@ -1673,29 +1673,29 @@ static struct attribute *umbrella_core_attributes[] = {
 	NULL,
 };
 
-static struct attribute_group umbrella_core_attr_group = {
-	.attrs = umbrella_core_attributes,
-	.name = "umbrella_core",
+static struct attribute_group skatter_core_attr_group = {
+	.attrs = skatter_core_attributes,
+	.name = "skatter_core",
 };
 
-static int cpufreq_umbrella_core_idle_notifier(struct notifier_block *nb,
+static int cpufreq_skatter_core_idle_notifier(struct notifier_block *nb,
 					     unsigned long val,
 					     void *data)
 {
 	switch (val) {
 	case IDLE_START:
-		cpufreq_umbrella_core_idle_start();
+		cpufreq_skatter_core_idle_start();
 		break;
 	case IDLE_END:
-		cpufreq_umbrella_core_idle_end();
+		cpufreq_skatter_core_idle_end();
 		break;
 	}
 
 	return 0;
 }
 
-static struct notifier_block cpufreq_umbrella_core_idle_nb = {
-	.notifier_call = cpufreq_umbrella_core_idle_notifier,
+static struct notifier_block cpufreq_skatter_core_idle_nb = {
+	.notifier_call = cpufreq_skatter_core_idle_notifier,
 };
 
 #ifdef CONFIG_UC_MODE_AUTO_CHANGE
@@ -1722,12 +1722,12 @@ static void cpufreq_param_set_init(void)
 }
 #endif
 
-static int cpufreq_governor_umbrella_core(struct cpufreq_policy *policy,
+static int cpufreq_governor_skatter_core(struct cpufreq_policy *policy,
 		unsigned int event)
 {
 	int rc;
 	unsigned int j;
-	struct cpufreq_umbrella_core_cpuinfo *pcpu;
+	struct cpufreq_skatter_core_cpuinfo *pcpu;
 	struct cpufreq_frequency_table *freq_table;
 	unsigned long expire_time;
 
@@ -1757,7 +1757,7 @@ static int cpufreq_governor_umbrella_core(struct cpufreq_policy *policy,
 			down_write(&pcpu->enable_sem);
 			del_timer_sync(&pcpu->cpu_timer);
 			del_timer_sync(&pcpu->cpu_slack_timer);
-			cpufreq_umbrella_core_timer_start(j, 0);
+			cpufreq_skatter_core_timer_start(j, 0);
 			pcpu->governor_enabled = 1;
 			up_write(&pcpu->enable_sem);
 		}
@@ -1775,13 +1775,13 @@ static int cpufreq_governor_umbrella_core(struct cpufreq_policy *policy,
 			WARN_ON(cpufreq_get_global_kobject());
 
 		rc = sysfs_create_group(get_governor_parent_kobj(policy),
-				&umbrella_core_attr_group);
+				&skatter_core_attr_group);
 		if (rc) {
 			mutex_unlock(&gov_lock);
 			return rc;
 		}
 
-		idle_notifier_register(&cpufreq_umbrella_core_idle_nb);
+		idle_notifier_register(&cpufreq_skatter_core_idle_nb);
 		cpufreq_register_notifier(
 			&cpufreq_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
 		mutex_unlock(&gov_lock);
@@ -1806,9 +1806,9 @@ static int cpufreq_governor_umbrella_core(struct cpufreq_policy *policy,
 
 		cpufreq_unregister_notifier(
 			&cpufreq_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
-		idle_notifier_unregister(&cpufreq_umbrella_core_idle_nb);
+		idle_notifier_unregister(&cpufreq_skatter_core_idle_nb);
 		sysfs_remove_group(get_governor_parent_kobj(policy),
-				&umbrella_core_attr_group);
+				&skatter_core_attr_group);
 		if (!have_governor_per_policy())
 			cpufreq_put_global_kobject();
 		mutex_unlock(&gov_lock);
@@ -1870,7 +1870,7 @@ static int cpufreq_governor_umbrella_core(struct cpufreq_policy *policy,
 				 * The governor needs more time to evaluate
 				 * the load after changing policy parameters.
 				 */
-				cpufreq_umbrella_core_timer_start(j, 0);
+				cpufreq_skatter_core_timer_start(j, 0);
 				pcpu->nr_timer_resched++;
 			} else {
 				/*
@@ -1886,7 +1886,7 @@ static int cpufreq_governor_umbrella_core(struct cpufreq_policy *policy,
 				expire_time = max(MIN_TIMER_JIFFIES,
 						  expire_time);
 
-				cpufreq_umbrella_core_timer_start(j, expire_time);
+				cpufreq_skatter_core_timer_start(j, expire_time);
 				pcpu->nr_timer_resched++;
 			}
 			pcpu->limits_changed = true;
@@ -1898,7 +1898,7 @@ static int cpufreq_governor_umbrella_core(struct cpufreq_policy *policy,
 }
 
 #ifdef CONFIG_POWERSUSPEND
-static void cpufreq_umbrella_core_power_suspend(struct power_suspend *h)
+static void cpufreq_skatter_core_power_suspend(struct power_suspend *h)
 {
     mutex_lock(&gov_lock);
     if (max_inactive_freq_screen_off != max_inactive_freq) {
@@ -1907,7 +1907,7 @@ static void cpufreq_umbrella_core_power_suspend(struct power_suspend *h)
     mutex_unlock(&gov_lock);
 }
 
-static void cpufreq_umbrella_core_power_resume(struct power_suspend *h)
+static void cpufreq_skatter_core_power_resume(struct power_suspend *h)
 {
     mutex_lock(&gov_lock);
     if (max_inactive_freq_screen_on != max_inactive_freq) {
@@ -1916,30 +1916,30 @@ static void cpufreq_umbrella_core_power_resume(struct power_suspend *h)
     mutex_unlock(&gov_lock);
 }
 
-static struct power_suspend cpufreq_umbrella_core_power_suspend_info = {
-    .suspend = cpufreq_umbrella_core_power_suspend,
-    .resume = cpufreq_umbrella_core_power_resume,
+static struct power_suspend cpufreq_skatter_core_power_suspend_info = {
+    .suspend = cpufreq_skatter_core_power_suspend,
+    .resume = cpufreq_skatter_core_power_resume,
 };
 #endif
 
-static void cpufreq_umbrella_core_nop_timer(unsigned long data)
+static void cpufreq_skatter_core_nop_timer(unsigned long data)
 {
 }
 
-static int __init cpufreq_umbrella_core_init(void)
+static int __init cpufreq_skatter_core_init(void)
 {
 	unsigned int i;
-	struct cpufreq_umbrella_core_cpuinfo *pcpu;
+	struct cpufreq_skatter_core_cpuinfo *pcpu;
 	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
 
 	/* Initalize per-cpu timers */
 	for_each_possible_cpu(i) {
 		pcpu = &per_cpu(cpuinfo, i);
 		init_timer_deferrable(&pcpu->cpu_timer);
-		pcpu->cpu_timer.function = cpufreq_umbrella_core_timer;
+		pcpu->cpu_timer.function = cpufreq_skatter_core_timer;
 		pcpu->cpu_timer.data = i;
 		init_timer(&pcpu->cpu_slack_timer);
-		pcpu->cpu_slack_timer.function = cpufreq_umbrella_core_nop_timer;
+		pcpu->cpu_slack_timer.function = cpufreq_skatter_core_nop_timer;
 		spin_lock_init(&pcpu->load_lock);
 		init_rwsem(&pcpu->enable_sem);
 	}
@@ -1959,7 +1959,7 @@ static int __init cpufreq_umbrella_core_init(void)
 #endif
 	mutex_init(&gov_lock);
 	speedchange_task =
-		kthread_create(cpufreq_umbrella_core_speedchange_task, NULL,
+		kthread_create(cpufreq_skatter_core_speedchange_task, NULL,
 			       "cfumbrella_core");
 	if (IS_ERR(speedchange_task))
 		return PTR_ERR(speedchange_task);
@@ -1970,9 +1970,9 @@ static int __init cpufreq_umbrella_core_init(void)
 	/* NB: wake up so the thread does not look hung to the freezer */
 	wake_up_process(speedchange_task);
 #ifdef CONFIG_POWERSUSPEND
-    register_power_suspend(&cpufreq_umbrella_core_power_suspend_info);
+    register_power_suspend(&cpufreq_skatter_core_power_suspend_info);
 #endif
-	return cpufreq_register_governor(&cpufreq_gov_umbrella_core);
+	return cpufreq_register_governor(&cpufreq_gov_skatter_core);
 }
 
 #ifdef CONFIG_UC_MODE_AUTO_CHANGE_BOOST
@@ -1989,22 +1989,22 @@ static void mode_auto_change_boost(struct work_struct *work)
 }
 #endif	// CONFIG_UC_MODE_AUTO_CHANGE_BOOST
 
-#ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_UMBRELLA_CORE
-fs_initcall(cpufreq_umbrella_core_init);
+#ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_SKATTER_CORE
+fs_initcall(cpufreq_skatter_core_init);
 #else
-module_init(cpufreq_umbrella_core_init);
+module_init(cpufreq_skatter_core_init);
 #endif
 
-static void __exit cpufreq_umbrella_core_exit(void)
+static void __exit cpufreq_skatter_core_exit(void)
 {
-	cpufreq_unregister_governor(&cpufreq_gov_umbrella_core);
+	cpufreq_unregister_governor(&cpufreq_gov_skatter_core);
 	kthread_stop(speedchange_task);
 	put_task_struct(speedchange_task);
 }
 
-module_exit(cpufreq_umbrella_core_exit);
+module_exit(cpufreq_skatter_core_exit);
 
 MODULE_AUTHOR("LoungeKatt <twistedumbrella@gmail.com>");
-MODULE_DESCRIPTION("'cpufreq_umbrella_core' - A cpufreq governor for "
+MODULE_DESCRIPTION("'cpufreq_skatter_core' - A cpufreq governor for "
 	"Latency sensitive workloads");
 MODULE_LICENSE("GPL");
