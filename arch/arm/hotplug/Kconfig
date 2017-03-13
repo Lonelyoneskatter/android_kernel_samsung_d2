@@ -61,6 +61,10 @@ config MSM_SLEEPER
 	  CPU hotplug driver controls on-/offlining of additional cores based
 	  on suspend/resume.
 
+config STATE_HELPER
+        bool "State Helper"
+	depends on STATE_NOTIFIER
+
 config STATE_NOTIFIER
         bool "State Notifier"
 
