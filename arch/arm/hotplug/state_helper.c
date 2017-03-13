@@ -17,7 +17,6 @@
 #include <linux/power_supply.h>
 #include <linux/sched.h>
 #include <linux/state_helper.h>
-#include <linux/msm_thermal.h>
 #include <linux/workqueue.h>
 
 #define STATE_HELPER			"state_helper"
@@ -54,13 +53,11 @@ static struct state_helper {
 static struct state_info {
 	unsigned int target_cpus;
 	unsigned int batt_limited_cpus;
-	unsigned int therm_allowed_cpus;
 	unsigned int batt_level;
 	long current_temp;
 } info = {
 	.target_cpus = NR_CPUS,
 	.batt_limited_cpus = NR_CPUS,
-	.therm_allowed_cpus = NR_CPUS,
 	.batt_level = 100
 };
 
@@ -83,8 +80,6 @@ static void target_cpus_calc(void)
 
 	info.target_cpus = min(info.target_cpus,
 				info.batt_limited_cpus);	
-	info.target_cpus = min(info.target_cpus,
-				info.therm_allowed_cpus);	
 }
 
 static void __ref state_helper_work(struct work_struct *work)
@@ -105,8 +100,7 @@ static void __ref state_helper_work(struct work_struct *work)
 		}
 	} else if (info.target_cpus > num_online_cpus()) {
 		for(cpu = 1; cpu < NR_CPUS; cpu++) {
-			if (cpu_online(cpu) ||
-				msm_thermal_info.cpus_offlined & BIT(cpu))
+			if (cpu_online(cpu))
 				continue;
 			cpu_up(cpu);
 			dprintk("%s: Switching CPU%u online\n",
@@ -125,14 +119,11 @@ static void __ref state_helper_work(struct work_struct *work)
 			STATE_HELPER, info.batt_level);
 		pr_info("%s: Current Temp: %ld\n",
 			STATE_HELPER, info.current_temp);
-		pr_info("%s: Core Limit Temp: %u\n",
-			STATE_HELPER, msm_thermal_info.core_limit_temp_degC);
 		pr_info("%s: Target requested: %u\n",
 			STATE_HELPER, info.target_cpus);
 		for_each_possible_cpu(cpu)
 			pr_info("%s: CPU%u status:%u allowed:%u\n",
-				STATE_HELPER, cpu, cpu_online(cpu),
-				!(msm_thermal_info.cpus_offlined & BIT(cpu)));
+				STATE_HELPER, cpu, cpu_online(cpu));
 	}
 }
 
@@ -146,20 +137,9 @@ static void batt_level_check(void)
 		info.batt_limited_cpus = helper.max_cpus_cri;
 }
 
-static void thermal_check(void)
-{
-	int cpu, sum = 0;
-
-	for_each_possible_cpu(cpu)
-		sum += !(msm_thermal_info.cpus_offlined & BIT(cpu));
-
-	info.therm_allowed_cpus = sum;
-}
-
 static void reschedule_nodelay(void)
 {
 	batt_level_check();
-	thermal_check();
 
 	cancel_delayed_work_sync(&helper_work);
 	queue_delayed_work(helper_wq, &helper_work, 0);
@@ -168,7 +148,6 @@ static void reschedule_nodelay(void)
 void reschedule_helper(void)
 {
 	batt_level_check();
-	thermal_check();
 
 	if (!helper.enabled)
 		return;
@@ -198,23 +177,6 @@ void batt_level_notify(int k)
 		info.batt_level == helper.batt_level_eco ||
 		info.batt_level == helper.batt_level_eco+1)
 		reschedule_helper();
-}
-
-void thermal_notify(int cpu, int status)
-{
-	if (!helper.enabled)
-		return;
-
-	dprintk("%s: Received Thermal Notification for CPU%u: %u\n",
-			STATE_HELPER, cpu, status);
-
-	/* Do not reschedule; let thermal driver take care. */
-	thermal_check();
-}
-
-void thermal_level_relay(long temp)
-{
-	info.current_temp = temp;
 }
 
 static int state_notifier_callback(struct notifier_block *this,
@@ -266,8 +228,7 @@ static void __ref state_helper_stop(void)
 
 	/* Wake up all the sibling cores */
 	for_each_possible_cpu(cpu)
-		if (!cpu_online(cpu) &&
-			!(msm_thermal_info.cpus_offlined & BIT(cpu)))
+		if (!cpu_online(cpu))
 			cpu_up(cpu);
 }
 
@@ -502,7 +463,6 @@ static ssize_t show_target_cpus(struct kobject *kobj,
 {
 	if (!helper.enabled) {
 		batt_level_check();
-		thermal_check();
 		target_cpus_calc();
 	}
 
@@ -517,16 +477,6 @@ static ssize_t show_batt_limited_cpus(struct kobject *kobj,
 		batt_level_check();
 
 	return sprintf(buf, "%u\n", info.batt_limited_cpus);
-}
-
-static ssize_t show_therm_allowed_cpus(struct kobject *kobj,
-				struct kobj_attribute *attr, 
-				char *buf)
-{
-	if (!helper.enabled)
-		thermal_check();
-
-	return sprintf(buf, "%u\n", info.therm_allowed_cpus);
 }
 
 static ssize_t show_batt_level(struct kobject *kobj,
@@ -561,7 +511,6 @@ KERNEL_ATTR_RW(batt_level_cri);
 KERNEL_ATTR_RW(debug_mask);
 KERNEL_ATTR_RO(target_cpus);
 KERNEL_ATTR_RO(batt_limited_cpus);
-KERNEL_ATTR_RO(therm_allowed_cpus);
 KERNEL_ATTR_RO(batt_level);
 KERNEL_ATTR_RO(current_temp);
 
@@ -576,7 +525,6 @@ static struct attribute *state_helper_attrs[] = {
 	&debug_mask_attr.attr,
 	&target_cpus_attr.attr,
 	&batt_limited_cpus_attr.attr,
-	&therm_allowed_cpus_attr.attr,
 	&batt_level_attr.attr,
 	&current_temp_attr.attr,
 	NULL,
