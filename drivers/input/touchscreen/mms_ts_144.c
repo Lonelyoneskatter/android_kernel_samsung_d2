@@ -3104,9 +3104,9 @@ static int mms_ts_suspend(struct device *dev)
 	info->pdata->vdd_on(0);
 	msleep(50);
 #if defined(CONFIG_STATE_NOTIFIER) || defined(CONFIG_POWERSUSPEND)
-    if (state_suspended == true) {
+    if (state_suspended) {
 	state_suspend();
-    } else if (power_suspended == true) {
+    } else if (power_suspended) {
     set_power_suspend_state_panel_hook(POWER_SUSPEND_ACTIVE);
     }
 #endif
@@ -3143,9 +3143,9 @@ static int mms_ts_resume(struct device *dev)
 	mutex_unlock(&info->input_dev->mutex);
 
 #if defined(CONFIG_STATE_NOTIFIER) || defined(CONFIG_POWERSUSPEND)
-    if (state_suspended == false) {
+    if (!state_suspended) {
 	state_resume();
-    } else if (power_suspended == false) {
+    } else if (!power_suspended) {
     set_power_suspend_state_panel_hook(POWER_SUSPEND_INACTIVE);
     }
 #endif
