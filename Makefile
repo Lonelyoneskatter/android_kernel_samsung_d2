@@ -249,10 +249,11 @@ HOSTCXX      = $(CCACHE) g++
 HOSTCFLAGS   = -Wmissing-prototypes -Wstrict-prototypes -Ofast -fomit-frame-pointer -fgcse-las \
                -fgraphite -floop-flatten -floop-parallelize-all -ftree-loop-linear -floop-interchange \
                -floop-strip-mine -floop-block -pipe -Wno-unused-parameter -Wno-sign-compare -Wno-missing-field-initializers \
-               -Wno-unused-variable -Wno-unused-value -std=gnu89 -fno-aggressive-loop-optimizations
+               -Wno-unused-variable -Wno-unused-value -std=gnu89 -fno-aggressive-loop-optimizations \
+               -pthread -fstrict-aliasing -fuse-linker-plugin -flto=4
  
 HOSTCXXFLAGS = -Ofast -fgcse-las -fgraphite -floop-flatten -floop-parallelize-all -ftree-loop-linear \
-               -floop-interchange -floop-strip-mine -floop-block -pipe
+               -floop-interchange -floop-strip-mine -floop-block -pipe -pthread -fstrict-aliasing -fuse-linker-plugin -flto=4
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
