@@ -218,6 +218,18 @@ static inline unsigned long cpufreq_scale(unsigned long old, u_int div, u_int mu
 #define CPUFREQ_GOV_START  1
 #define CPUFREQ_GOV_STOP   2
 #define CPUFREQ_GOV_LIMITS 3
+#define CPUFREQ_GOV_INTERACT 4
+#define CPUFREQ_GOV_NOINTERACT 5
+
+enum {
+	INTERACT_ID_TOUCHSCREEN,
+	INTERACT_ID_SOFTKEY,
+	INTERACT_ID_HARDKEY,
+	INTERACT_ID_OTHER,
+};
+
+void cpufreq_set_interactivity(int on, int idbit);
+
 #define CPUFREQ_RELATION_L 0  /* lowest frequency at or above target */
 #define CPUFREQ_RELATION_H 1  /* highest frequency below or at target */
 #define CPUFREQ_RELATION_C 2  /* closest frequency to target */
