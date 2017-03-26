@@ -119,6 +119,10 @@ config CPU_FREQ_DEFAULT_GOV_ELEMENTALX
 	help
 	  Use the CPUFreq governor 'elementalx' as default.
 
+config CPU_FREQ_DEFAULT_GOV_FREELUNCH
+	bool "freelunch"
+	select CPU_FREQ_GOV_FREELUNCH
+
 config CPU_FREQ_DEFAULT_GOV_HELLSACTIVE
 	bool "hellsactive"
 	select CPU_FREQ_GOV_HELLSACTIVE
@@ -347,6 +351,10 @@ config CPU_FREQ_GOV_DARKNESS
 config CPU_FREQ_GOV_ELEMENTALX
 	tristate "'elementalx' cpufreq policy governor"
 	select CPU_FREQ_TABLE
+
+config CPU_FREQ_GOV_FREELUNCH
+	tristate "'freelunch' cpufreq governor"
+	depends on CPU_FREQ && INTERACTION_HINTS
 
 config CPU_FREQ_GOV_HELLSACTIVE
 	tristate "'hellsactive' cpufreq policy governor"
