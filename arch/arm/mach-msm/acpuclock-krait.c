@@ -40,7 +40,7 @@
 #include "acpuclock-krait.h"
 #include "avs.h"
 
-#define FREQ_TABLE_SIZE 35
+#define FREQ_TABLE_SIZE 37
 #define MIN_VDD   (600000)
 #define VMIN_VDD (1150000)
 #define MAX_VDD  (1400000)
