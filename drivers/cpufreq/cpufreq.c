@@ -482,36 +482,78 @@ show_one(util_threshold, util_thres);
 static int __cpufreq_set_policy(struct cpufreq_policy *data,
 				struct cpufreq_policy *policy);
 
+/* cpufreq holds a lock when calling store_xxx(), so we need to schedule the
+ * frequency table update to avoid a deadlock.
+ */
+static struct freq_work_struct {
+	struct work_struct work;
+	unsigned int freq;
+	struct cpufreq_policy *policy;
+} enable_oc_work;
+void acpuclk_enable_oc_freqs(unsigned int freq);
+
+static void do_enable_oc(struct work_struct *work) {
+	struct cpufreq_policy new_policy;
+	struct cpufreq_policy *policy =
+		((struct freq_work_struct *) work)->policy;
+	if (cpufreq_get_policy(&new_policy, policy->cpu))
+		return;
+	new_policy.max = ((struct freq_work_struct *) work)->freq;
+	acpuclk_enable_oc_freqs(new_policy.max);
+	// __cpufreq_set_policy clobbers this, so hack it up.
+	policy->cpuinfo.max_freq = new_policy.max;
+	if (__cpufreq_set_policy(policy, &new_policy))
+		return;
+	policy->user_policy.max = policy->max;
+}
+
 /**
  * cpufreq_per_cpu_attr_write() / store_##file_name() - sysfs write access
  */
-#define store_one(file_name, object)			\
-static ssize_t store_##file_name					\
-(struct cpufreq_policy *policy, const char *buf, size_t count)		\
-{									\
-	unsigned int ret = -EINVAL;					\
-	struct cpufreq_policy new_policy;				\
-									\
-	ret = cpufreq_get_policy(&new_policy, policy->cpu);		\
-	if (ret)							\
-		return -EINVAL;						\
-									\
-	ret = sscanf(buf, "%u", &new_policy.object);			\
-	if (ret != 1)							\
-		return -EINVAL;						\
-									\
-	ret = cpufreq_driver->verify(&new_policy);			\
-	if (ret)							\
-		pr_err("cpufreq: Frequency verification failed\n");	\
-									\
-	policy->user_policy.object = new_policy.object;			\
-	ret = __cpufreq_set_policy(policy, &new_policy);		\
-									\
-	return ret ? ret : count;					\
-}
+static ssize_t store_scaling_min_freq
+(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	struct cpufreq_policy new_policy;
 
-store_one(scaling_min_freq, min);
-store_one(scaling_max_freq, max);
+	ret = cpufreq_get_policy(&new_policy, policy->cpu);
+	if (ret)
+		return -EINVAL;
+
+	ret = sscanf(buf, "%u", &new_policy.min);
+	if (ret != 1)
+		return -EINVAL;
+
+	ret = __cpufreq_set_policy(policy, &new_policy);
+	policy->user_policy.min = policy->min;
+
+	return ret ? ret : count;
+}
+static ssize_t store_scaling_max_freq
+(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	struct cpufreq_policy new_policy;
+
+	ret = cpufreq_get_policy(&new_policy, policy->cpu);
+	if (ret)
+		return -EINVAL;
+
+	ret = sscanf(buf, "%u", &new_policy.max);
+	if (ret != 1)
+		return -EINVAL;
+
+	if (new_policy.max > 1512000) {
+		enable_oc_work.freq = new_policy.max;
+		enable_oc_work.policy = policy;
+		schedule_work((struct work_struct *) &enable_oc_work);
+	} else {
+		ret = __cpufreq_set_policy(policy, &new_policy);
+		policy->user_policy.max = policy->max;
+	}
+
+	return ret ? ret : count;
+}
 
 /**
  * show_cpuinfo_cur_freq - current CPU frequency as detected by hardware
@@ -579,6 +621,33 @@ static ssize_t store_scaling_governor(struct cpufreq_policy *policy,
 		return ret;
 	else
 		return count;
+}
+
+/* Per-core UV interface */
+ssize_t acpuclk_store_vdd_table(const char *buf, size_t count);
+ssize_t acpuclk_show_vdd_table(char *buf, char *fmt, int dir, int fdiv, int vdiv);
+static ssize_t store_UV_mV_table(struct cpufreq_policy *policy,
+				const char *buf, size_t count) {
+	return acpuclk_store_vdd_table(buf, count);
+}
+static ssize_t show_UV_mV_table(struct cpufreq_policy *policy,
+				char *buf) {
+	return acpuclk_show_vdd_table(buf, "%umhz: %u mV\n", -1, 1000, 1000);
+}
+
+/* Per-core vmin interface */
+void acpuclk_set_override_vmin(int enable);
+int acpuclk_get_override_vmin(void);
+static ssize_t store_override_vmin(struct cpufreq_policy *policy,
+					const char *buf, size_t count) {
+	int val;
+	if (sscanf(buf, "%i", &val) != 1)
+		return -EINVAL;
+	acpuclk_set_override_vmin(val);
+	return count;
+}
+static ssize_t show_override_vmin(struct cpufreq_policy *policy, char *buf) {
+	return sprintf(buf, "%u\n", acpuclk_get_override_vmin());
 }
 
 /**
@@ -710,20 +779,6 @@ static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
 	return sprintf(buf, "%u\n", policy->cpuinfo.max_freq);
 }
 
-extern ssize_t vc_get_vdd(char *buf);
-extern void vc_set_vdd(const char *buf);
-
-static ssize_t show_UV_mV_table(struct cpufreq_policy *policy, char *buf)
-{
-	return vc_get_vdd(buf);
-}
-static ssize_t store_UV_mV_table
-(struct cpufreq_policy *policy, const char *buf, size_t count)
-{
-	vc_set_vdd(buf);
-	return count;
-}
-
 cpufreq_freq_attr_ro_perm(cpuinfo_cur_freq, 0400);
 cpufreq_freq_attr_ro(cpuinfo_min_freq);
 cpufreq_freq_attr_ro(cpuinfo_max_freq);
@@ -741,6 +796,7 @@ cpufreq_freq_attr_rw(scaling_max_freq);
 cpufreq_freq_attr_rw(scaling_governor);
 cpufreq_freq_attr_rw(scaling_setspeed);
 cpufreq_freq_attr_rw(UV_mV_table);
+cpufreq_freq_attr_rw(override_vmin);
 
 static struct attribute *default_attrs[] = {
 	&cpuinfo_min_freq.attr,
@@ -756,7 +812,8 @@ static struct attribute *default_attrs[] = {
 	&scaling_driver.attr,
 	&scaling_available_governors.attr,
 	&scaling_setspeed.attr,
-        &UV_mV_table.attr,
+	&UV_mV_table.attr,
+	&override_vmin.attr,
 	NULL
 };
 
@@ -2226,6 +2283,8 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
 	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
 
 	register_hotcpu_notifier(&cpufreq_cpu_notifier);
+
+	INIT_WORK((struct work_struct *) &enable_oc_work, do_enable_oc);
 
 	get_online_cpus();
 	ret = subsys_interface_register(&cpufreq_interface);
