@@ -11,68 +11,50 @@ bldgrn=${txtbld}$(tput setaf 2) # green
 bldblu=${txtbld}$(tput setaf 4) # blue
 txtrst=$(tput sgr0) # Reset
 
-# Toolchain Directory / Defconfig
-export TOOLCHAIN_DIR=$HOME/toolchains/uber
-BCC=$TOOLCHAIN_DIR/arm-eabi-6.x-/bin/arm-eabi-
-export BUILD_THREADS=15
+export KERNEL_DIR=$(pwd)
+export TOOLCHAIN_DIR=$HOME/toolchains/uber/
+export TOOLCHAIN_VERSION=arm-eabi-6.x
+export BUILD_THREADS=1
 export KERNEL_DEFCONFIG=skatter_d2_defconfig
 
-CLEAN_DIR()
-{
- make clean
- make mrproper
- make distclean
- ccache -c
+# Toolchains
 
- if [ -f arch/arm/boot/zImage ]; then
-    echo "Removing old kernel zImage"
-    rm arch/arm/boot/zImage
-    rm $HOME/Skatter_Kernel/zImage
- else
-    echo "No Need to clean it."
- fi;
-}
+#UBER
+BCC=$TOOLCHAIN_DIR/$TOOLCHAIN_VERSION/bin/arm-eabi-
 
-BUILD_KERNEL()
-{
-export ARCH=arm
-export SUBARCH=arm
-export CCACHE=CCACHE
-export USE_CCACHE=1
-export USE_SEC_FIPS_MODE=true
-export KCONFIG_NOTIMESTAMP=true
-export CROSS_COMPILE=$BCC
-export ENABLE_GRAPHITE=true
-make $KERNEL_DEFCONFIG VARIANT_DEFCONFIG=skatter_d2_defconfig SELINUX_DEFCONFIG=selinux_defconfig
-make -j$BUILD_THREADS
-}
+# Cleanup old files from build environment
 
-MOVE_IMAGE()
+CLEANUP()
 {
 if [ -f arch/arm/boot/zImage ]; then
-   if [ -d $HOME/Skatter_Kernel/ ];then
-      cp arch/arm/boot/zImage $HOME/Skatter_Kernel;
-   else
-      mkdir $HOME/Skatter_Kernel/
-      cp arch/arm/boot/zImage $HOME/Skatter_Kernel;
-   fi;
+   rm arch/arm/boot/zImage;
 fi;
+	make clean
+	make mrproper
+	make distclean
+	ccache -c
 }
 
-clear
+# Set build environment variables & compile
+BUILD_KERNEL()
+{
+	export ARCH=arm
+	export SUBARCH=arm
+	export CCACHE=CCACHE
+	export USE_CCACHE=1
+	export USE_SEC_FIPS_MODE=true
+	export KCONFIG_NOTIMESTAMP=true
+	export CROSS_COMPILE=$BCC
+	export ENABLE_GRAPHITE=true
+	make $KERNEL_DEFCONFIG SELINUX_DEFCONFIG=selinux_defconfig
+	make -j$BUILD_THREADS
+}
 
-
-(
-	START_TIME=`date +%s`
-	CLEAN_DIR
-	BUILD_KERNEL
-	MOVE_IMAGE
-	END_TIME=`date +%s`
-        clear
-        if [ -f arch/arm/boot/zImage ]; then
-        echo "Kernel was finished at $( date +"%m-%d-%Y %H:%M:%S" )"
-	let "ELAPSED_TIME=$END_TIME-$START_TIME"
-	echo "Took $ELAPSED_TIME seconds to compile"
+# Check if Image was compiled successful
+IMAGE_CHECK()
+{
+if [ -f "arch/arm/boot/zImage" ]; then
+	echo "Done, Image compilation was successful!"
 echo "${bldred}         _______        ${txtrst}"
 echo "${bldred}        /******/|       ${txtrst}"
 echo "${bldred}        #######*|       ${txtrst}"
@@ -95,12 +77,27 @@ echo "${bldred}        #     #*|       ${txtrst}"
 echo "${bldred}        #     #*|       ${txtrst}"
 echo "${bldred}        #     #*/       ${txtrst}"
 echo "${bldred}        #######/        ${txtrst}"
-        else
-        echo "Did not finish compiling..."
-        echo "Kernel stopped at $( date +"%m-%d-%Y %H:%M:%S" )"
+else
+	echo "............................................."
+	echo "Image compilation Failed!"
+	echo "Please check build.log!"
+	echo "............................................."
+	echo " "
+fi
+}
+
+# Create Log File of Build
+
+rm -rf ./build.log
+(
+	START_TIME=`date +%s`
+	CLEANUP
+	BUILD_KERNEL
+	IMAGE_CHECK
+	END_TIME=`date +%s`
 	let "ELAPSED_TIME=$END_TIME-$START_TIME"
-	echo "Took $ELAPSED_TIME seconds to not compile"
-        fi
-)
+	echo "Total compile time is $ELAPSED_TIME seconds"
+	echo " "
+) 2>&1	 | tee -a ./build.log
 
 exit 1
