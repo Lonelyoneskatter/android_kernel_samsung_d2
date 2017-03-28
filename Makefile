@@ -625,7 +625,7 @@ KBUILD_CFLAGS	+= -fsanitize=leak -fno-diagnostics-show-caret -fno-pic \
                    -DNDEBUG -g0 -fivopts -fstdarg-opt -munaligned-access
 
 # New in GCC5
-KBUILD_CFLAGS	+= -flra-remat -fipa-ra -fipa-pta
+KBUILD_CFLAGS	+= -flra-remat -fipa-ra -fipa-pta -fipa-matrix-reorg
 KBUILD_CFLAGS	+= -fira-hoist-pressure -fira-loop-pressure \
 		   -fsched2-use-superblocks -fno-semantic-interposition -floop-nest-optimize \
 		   -ftree-loop-if-convert -ftree-loop-distribution -ftree-loop-distribute-patterns \
