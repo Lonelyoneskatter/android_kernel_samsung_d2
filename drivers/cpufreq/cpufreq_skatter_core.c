@@ -1781,6 +1781,9 @@ static int cpufreq_governor_skatter_core(struct cpufreq_policy *policy,
 			return rc;
 		}
 
+#ifdef CONFIG_INTERACTION_HINTS
+		cpufreq_want_interact_hints(1);
+#endif
 		idle_notifier_register(&cpufreq_skatter_core_idle_nb);
 		cpufreq_register_notifier(
 			&cpufreq_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
@@ -1806,6 +1809,9 @@ static int cpufreq_governor_skatter_core(struct cpufreq_policy *policy,
 
 		cpufreq_unregister_notifier(
 			&cpufreq_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
+#ifdef CONFIG_INTERACTION_HINTS
+		cpufreq_want_interact_hints(0);
+#endif
 		idle_notifier_unregister(&cpufreq_skatter_core_idle_nb);
 		sysfs_remove_group(get_governor_parent_kobj(policy),
 				&skatter_core_attr_group);
