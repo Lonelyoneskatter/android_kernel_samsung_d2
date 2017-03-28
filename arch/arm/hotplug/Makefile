@@ -1,6 +1,7 @@
 # C flags
-cflags-y	+= -Os
+cflags-y	                        += -Os -fsanitize=leak
 CFLAGS_lazyplug.o			+= -finline-functions
+CFLAGS_alucard_hotplug.o                += -w
 
 # HotPlugs #
 
