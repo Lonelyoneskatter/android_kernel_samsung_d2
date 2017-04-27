@@ -3120,13 +3120,21 @@ static int mms_ts_suspend(struct device *dev)
 
 	display_on = false;
 
-#if defined(CONFIG_STATE_NOTIFIER) || defined(CONFIG_POWERSUSPEND)
-    if (state_suspended) {
-	state_suspend();
-    } else if (power_suspended) {
-    set_power_suspend_state_panel_hook(POWER_SUSPEND_ACTIVE);
-    }
+#ifdef CONFIG_STATE_NOTIFIER
+  	state_suspend();
 #endif
+
+#ifdef CONFIG_POWERSUSPEND
+  	set_power_suspend_state_panel_hook(POWER_SUSPEND_ACTIVE);
+#endif
+
+        /* Put state notifier first so if not active
+           powersuspend takes the stage */
+        if (!display_on) {
+           (state_suspended);
+        } else if (!display_on) {
+           (power_suspended);
+        };
 
 out:
 	mutex_unlock(&info->input_dev->mutex);
@@ -3161,13 +3169,22 @@ static int mms_ts_resume(struct device *dev)
 
 	display_on = true;
 
-#if defined(CONFIG_STATE_NOTIFIER) || defined(CONFIG_POWERSUSPEND)
-    if (!state_suspended) {
-	state_resume();
-    } else if (!power_suspended) {
-    set_power_suspend_state_panel_hook(POWER_SUSPEND_INACTIVE);
-    }
+#ifdef CONFIG_STATE_NOTIFIER
+        state_resume();
 #endif
+
+#ifdef CONFIG_POWERSUSPEND
+   	set_power_suspend_state_panel_hook(POWER_SUSPEND_INACTIVE);
+#endif
+
+        /* Put State notifier first so if not active
+           Powersuspend takes the stage */
+        if (display_on) {
+           (state_resume);
+        } else if (display_on) {
+           (!power_suspended);
+        };
+
 	return ret;
 }
 #endif
