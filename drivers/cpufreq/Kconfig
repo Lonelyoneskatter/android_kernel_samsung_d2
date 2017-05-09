@@ -218,6 +218,12 @@ config CPU_FREQ_DEFAULT_GOV_POWERSAVE
 	  the frequency statically to the lowest frequency supported by
 	  the CPU.
 
+config CPU_FREQ_DEFAULT_GOV_SKATTERACTIVE
+	bool "skatteractive"
+	select CPU_FREQ_GOV_SKATTERACTIVE
+	help
+	  Use the CPUFreq governor 'skatteractive' as default.
+
 config CPU_FREQ_DEFAULT_GOV_SKATTER_CORE
 	bool "skatter_core"
 	select CPU_FREQ_GOV_SKATTER_CORE
@@ -464,6 +470,15 @@ config CPU_FREQ_GOV_POWERSAVE
 	  module will be called cpufreq_powersave.
 
 	  If in doubt, say Y.
+
+config CPU_FREQ_GOV_SKATTERACTIVE
+	tristate "'skatteractive' cpufreq policy governor"
+	help
+	  'skatteractive' - This driver adds a dynamic cpufreq policy governor
+	  designed for latency-sensitive workloads. Rewritten to be battery-friendly,
+	  while keeping performance, and attempting to avoid any lag.
+	  Based on interactive, it has the ability to limit max frequencies on screen off
+	  as well as screen on.
 
 config CPU_FREQ_GOV_SKATTER_CORE
 	tristate "'skatter_core' cpufreq policy governor"
